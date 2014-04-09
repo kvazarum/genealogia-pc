@@ -145,10 +145,11 @@ public class Settings {
                 rootElement.appendChild(path);
                 
                 Element user = document.createElement("user");
-                user.setTextContent("unknown");
+                user.setTextContent("anonymous");
                 rootElement.appendChild(user);
                 
-                Element password = document.createElement("password");                
+                Element password = document.createElement("password");
+                //password.setTextContent("unknown");
                 rootElement.appendChild(password); 
                 
                 Element defaultUser = document.createElement("defaultUser");                
