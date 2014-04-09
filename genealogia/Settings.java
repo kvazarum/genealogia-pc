@@ -195,8 +195,7 @@ public class Settings {
  */    
     public void saveToFile() 
     {
-        File settingsFile = this.getFile();
-        
+        File settingsFile = this.getFile();        
         try
         {
             Transformer tf = TransformerFactory.newInstance().newTransformer();
