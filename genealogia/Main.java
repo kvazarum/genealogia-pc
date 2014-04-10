@@ -57,6 +57,7 @@ public class Main {
             sets.setDefaultHuman(id);
         }        
         form.setHuman(id);
+        form.history.addToHistory(form.getRelative());
         form.setForm();
         form.pack();
         form.setSize(800, 600);
