@@ -6,11 +6,14 @@
 
 package genealogia.ui;
 
-import genealogia.enums.Gender;
 import genealogia.Data;
 import genealogia.DataReceiver;
 import genealogia.Family;
+import genealogia.History;
 import genealogia.Relative;
+import genealogia.enums.Direction;
+import genealogia.enums.Gender;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -27,6 +30,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
+import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -39,6 +43,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.JToolBar;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 import javax.swing.event.MouseInputListener;
@@ -97,18 +102,37 @@ public class mainForm extends JFrame
     
     JPanel panelParents = new JPanel(null);
     
-    Dimension avatarSize = new Dimension(30, 30);    
+    Dimension avatarSize = new Dimension(30, 30);
     
+    public History history = new History();
 
-
+/**
+ * Кнопка "Назад" в истории просмотров
+ */    
+    private JButton buttonBack = new JButton();
+    
+/**
+ * Кнопка "Вперёд" в истории просмотров
+ */    
+    private JButton buttonForward = new JButton();        
+    
+    private final static String BACK_ICON_NAME = "back.png";
     
 /**
  * Установка id человека, данные которого отображает форма
  * @param id - идентификатор человека
  */    
     public void setHuman(String id){
-        Thread dr = new DataReceiver(id, this);
-        dr.start();
+//        Thread dr = new DataReceiver(id, this);
+//        dr.start();
+        Relative hmn = new Relative();
+        hmn.setRelative(id);        
+        this.setHuman(hmn);
+    }
+    
+    public Relative getRelative()
+    {
+        return this.human;
     }
     
 /**
@@ -122,7 +146,108 @@ public class mainForm extends JFrame
 
     public Relative getHuman() {
         return this.human;
-    }    
+    } 
+    
+    private void historyBack()
+    {
+        int currentPosition = history.getPosition(); 
+        if(currentPosition > 0)
+        {
+            this.buttonForward.setToolTipText(this.human.getFullName());
+            clearFields();
+            setHuman(history.get(currentPosition - 1));                            
+            setData();
+            history.changePosition(Direction.Back);            
+            if (history.getPosition() == 0)
+            {
+                this.buttonBack.setEnabled(false);
+                this.buttonBack.setToolTipText("");
+            }
+            else
+            {
+                Relative prev = history.get(history.getPosition() - 1);
+                this.buttonBack.setToolTipText(prev.getFullName());
+            }
+            buttonForward.setEnabled(true);         
+        }
+    }
+    
+    private void historyForward()
+    {
+        int currentPosition = history.getPosition(); 
+        if(currentPosition < history.getSize() - 1)
+        {
+            this.buttonBack.setToolTipText(this.human.getFullName());   //устанавливаем подсказку предыдущего человека
+            clearFields();
+            setHuman(history.get(currentPosition + 1));                            
+            setData();
+            history.changePosition(Direction.Forward);            
+            if (history.getPosition() >= history.getSize() - 1 || currentPosition == history.getMax())
+            {
+                this.buttonForward.setEnabled(false);
+            }
+            this.buttonForward.setToolTipText(history.get(history.getPosition() + 1).getFullName());
+            this.buttonBack.setEnabled(true);
+        }
+        else
+        {
+            this.buttonForward.setToolTipText(""); //очищаем подсказку следующего человека
+        }
+    }
+    
+    protected Image createImageIcon(String path) {
+        Image img = null;
+        try
+        {
+            img = ImageIO.read(getClass().getResource(path));
+        }
+        catch(IOException | IllegalArgumentException ex)
+        {
+            System.out.println("Error in function setToolBar()");
+        }        
+        return img;
+    }
+    
+    private void setToolBar()
+    {
+        JToolBar jtb = new JToolBar("my toolbar");
+        jtb.setFloatable(true);
+        jtb.setPreferredSize(new Dimension(450, 20));
+        this.getContentPane().add(jtb, BorderLayout.NORTH);
+
+        //buttonBack.setIcon(new ImageIcon(BACK_ICON_NAME, "Назад"));
+        
+        buttonBack.setText("<<");
+        buttonBack.setToolTipText("Назад");
+        buttonBack.setPreferredSize(new Dimension(100,20));
+        buttonBack.setSize(100,20);
+        buttonBack.setVerticalTextPosition(AbstractButton.CENTER);
+        buttonBack.setHorizontalTextPosition(AbstractButton.LEADING);
+        buttonBack.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                historyBack();
+            }
+        });
+        
+        buttonForward.setText(">>");
+        buttonForward.setToolTipText("Вперёд");
+        buttonForward.setPreferredSize(new Dimension(100,20));
+        buttonForward.setSize(100,20);
+        buttonForward.setVerticalTextPosition(AbstractButton.CENTER);
+        buttonForward.setHorizontalTextPosition(AbstractButton.LEADING);
+        buttonForward.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                historyForward();
+            }
+        });        
+        buttonBack.setEnabled(false);
+        buttonForward.setEnabled(false);
+        jtb.add(this.buttonBack);        
+        jtb.add(this.buttonForward);
+        
+    }
     
 /**
  * Установка элементов формы
@@ -134,6 +259,9 @@ public class mainForm extends JFrame
         
 //  Меню        
         this.setMenu();
+        
+//  Тулбар
+        this.setToolBar();
 
 //  Панель поиска        
         this.setSearchPanel();        
@@ -147,7 +275,7 @@ public class mainForm extends JFrame
         JTabbedPane tabPane = new JTabbedPane();
         tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("PrivateData"), panelPersonal);
         tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Parents"), panelParents);
-        tabPane.addTab("Семьи", this.panelFamily);
+        tabPane.addTab("Семьи и дети", this.panelFamily);
         tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Search"), this.panelSearch);
         this.add(tabPane);
         
@@ -195,15 +323,22 @@ public class mainForm extends JFrame
  * Двойной щелчок на родителе для перехода на этого человека
  * @param componentName 
  */    
-    private void doubleClick(Component component)
+    private void onClick(Component component)
     {
         component.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         component.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR)); 
         
-        if (!component.equals("-1"))
+        String _componentName = component.getName();
+        if (!_componentName.equals("-1"))
         {
+            this.buttonBack.setToolTipText(this.human.getFullName());            
             clearFields();
-            setHuman(component.getName());                            
+            setHuman(_componentName);
+            this.history.addToHistory(this.getHuman());
+            this.buttonBack.setEnabled(true);
+            
+            this.buttonForward.setToolTipText(""); //очищаем подсказку для движения по истории вперёд
+            this.buttonForward.setEnabled(false);
             setData();
         }
 
@@ -217,7 +352,7 @@ public class mainForm extends JFrame
  */    
     public MouseListener getMouseListener()
     {
-        MouseListener ml = new MouseListener()
+        MouseListener _ml = new MouseListener()
         {
 
             @Override
@@ -227,7 +362,7 @@ public class mainForm extends JFrame
                 
                 if (click == 1)
                 {
-                    doubleClick(e.getComponent());
+                    onClick(e.getComponent());
                 }
             }
 
@@ -251,7 +386,7 @@ public class mainForm extends JFrame
                 
             }
         };
-        return ml;
+        return _ml;
     }
     
     private void clearFields()
@@ -272,8 +407,8 @@ public class mainForm extends JFrame
     
     private void clearParentsTab()
     {
-        String empty = "empty.jpg";
-        ImageIcon icon = new ImageIcon(empty);
+        String _empty = "empty.jpg";
+        ImageIcon icon = new ImageIcon(_empty);
         icon.getImage().flush();
         this.motherAvatar.setIcon(icon);
         this.fatherAvatar.setIcon(icon);
@@ -496,21 +631,21 @@ public class mainForm extends JFrame
         String fatherID = "-1";
         String motherID = "-1";
         
+        Relative _parent = new Relative();
+        
         if (!this.human.getFather().equals("-1"))
         {
-            Relative father = new Relative();
-            father.setRelative(human.getFather());
-            fatherName = father.getFullName();
-            this.fieldFather.setToolTipText(father.getDescription());
+            _parent.setRelative(human.getFather());
+            fatherName = _parent.getFullName();
+            this.fieldFather.setToolTipText(_parent.getDescription());
             fatherID = human.getFather();
         }
 
         if (!this.human.getMother().equals("-1"))
         {
-            Relative mother = new Relative();
-            mother.setRelative(human.getMother());
-            motherName = mother.getFullName();
-            this.fieldMother.setToolTipText(mother.getDescription());
+            _parent.setRelative(human.getMother());
+            motherName = _parent.getFullName();
+            this.fieldMother.setToolTipText(_parent.getDescription());
             motherID = human.getMother();            
         }
         
@@ -548,21 +683,16 @@ public class mainForm extends JFrame
 //  Father's avatar        
         if (!this.human.getFather().equals("-1"))
         {
-            Relative father = new Relative();
-            father.setRelative(this.human.getFather());
-            if (father.getAvatar().length() > 0)
+            _parent.setRelative(this.human.getFather());
+            if (_parent.getAvatar().length() > 0)
             {
-                if (fatherAvatar.setAvatar(father.getPathToAvatar()))
-                {
-                    
-                }
-                else
-                {
-                
-                }
-               
+                this.fatherAvatar.setAvatar(_parent.getPathToAvatar());
+            }
+            else
+            {
+                this.fatherAvatar.setVisible(false);
             }            
-            fieldFatherBDate.setText(Relative.displayDate(father.getBDate()));
+            fieldFatherBDate.setText(Relative.displayDate(_parent.getBDate()));
         } 
         else
         {
@@ -573,30 +703,17 @@ public class mainForm extends JFrame
 //  Mother's avatar        
         if (!this.human.getMother().equals("-1"))
         {
-            Relative mother = new Relative();
-            mother.setRelative(this.human.getMother());
-            if (mother.getAvatar().length() > 0)
+            _parent.setRelative(this.human.getMother());
+            if (_parent.getAvatar().length() > 0)
             {
-                try
-                {
-                    URL url = new URL(mother.getPathToAvatar());
-                    BufferedImage image = ImageIO.read(url);
-                    ImageIcon ii = new ImageIcon(image);
-                    this.motherAvatar.setIcon(new ImageIcon(ii.getImage().getScaledInstance(30, 30, ii.getImage().SCALE_DEFAULT)));
-                    this.motherAvatar.setText("");
-                    this.motherAvatar.setVisible(true);
-                }
-                catch(java.io.IOException e)
-                {
-
-                }                
+                this.motherAvatar.setAvatar(_parent.getPathToAvatar());
             }
             else
             {
                 this.motherAvatar.setVisible(false);
             }
             
-            fieldMotherBDate.setText(Relative.displayDate(mother.getBDate()));
+            fieldMotherBDate.setText(Relative.displayDate(_parent.getBDate()));
             fieldBirthPlace.setText(this.human.getBPlace());            
         }
         else
@@ -611,14 +728,15 @@ public class mainForm extends JFrame
  */    
     private void setFamilyData()
     {
-        if (this.human.getSizeFams() > 0) // если имеются семьи
+        ArrayList<String> childrenFromFamilies = new ArrayList<>(); 
+        if (this.human.getFamsCount() > 0) // если имеются семьи
         {
 
             ArrayList<String> listF = this.human.getFamilies();
             
             int lastY = 0;  //  Последнее значение Y панели семьи
             int lastHeight = 0; // Последнее значение высоты панели семьи
-            for (int i=0; i < this.human.getSizeFams(); i++)
+            for (int i=0; i < this.human.getFamsCount(); i++)
             {
                 int height = 15;
                 
@@ -691,23 +809,24 @@ public class mainForm extends JFrame
                         MouseListener ml = this.getMouseListener();
                         fieldChild.addMouseListener(ml);
 
-                        Relative ch = new Relative();
-                        ch.setRelative(fam.getChild(k));
+                        Relative _child = new Relative();
+                        _child.setRelative(fam.getChild(k));
 
-                        fieldChild.setText(ch.getFullName());
+                        fieldChild.setText(_child.getFullName());
                         familyPanel.add(fieldChild);
 
-                        fieldBDate.setText(ch.displayDate(ch.getBDate()));
+                        fieldBDate.setText(_child.displayDate(_child.getBDate()));
                         fieldBDate.setLocation(x + 300, y);
                         familyPanel.add(fieldBDate);
 
                         AvatarLabel avatar = new AvatarLabel();
                         avatar.setSize(avatarSize);
                         avatar.setLocation(x + 430, y);
-                        if (avatar.setAvatar(ch.getPathToAvatar()))
+                        if (avatar.setAvatar(_child.getPathToAvatar()))
                         {
                             familyPanel.add(avatar);
                         }
+                        childrenFromFamilies.add(fam.getChild(k));
                     }
                 }
 
@@ -789,7 +908,7 @@ public class mainForm extends JFrame
 
                                 if (click == 1)
                                 {
-                                    doubleClick(e.getComponent());
+                                    onClick(e.getComponent());
                                 }
                             }
 
