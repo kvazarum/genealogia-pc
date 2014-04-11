@@ -7,7 +7,7 @@
 package genealogia.ui;
 
 import genealogia.Data;
-import genealogia.DataReceiver;
+//import genealogia.DataReceiver;
 import genealogia.Family;
 import genealogia.History;
 import genealogia.Relative;
@@ -87,7 +87,7 @@ public class mainForm extends JFrame
     Font plainFont  = new Font(fieldFatherBDate.getFont().getName(), Font.PLAIN, fieldFatherBDate.getFont().getSize());
 
 //  Панель с данными семей    
-    JPanel panelFamily = new JPanel(null);
+    JPanel panelFamilies = new JPanel(null);
     
 // Панель для личных данных
     JPanel panelPersonal = new JPanel(null);    
@@ -125,8 +125,7 @@ public class mainForm extends JFrame
     public void setHuman(String id){
 //        Thread dr = new DataReceiver(id, this);
 //        dr.start();
-        Relative hmn = new Relative();
-        hmn.setRelative(id);        
+        Relative hmn = new Relative(id);      
         this.setHuman(hmn);
     }
     
@@ -141,7 +140,9 @@ public class mainForm extends JFrame
  */    
     public void setHuman(Relative hmn)
     {
+        clearFields();        
         this.human = hmn;
+        setData();        
     }
 
     public Relative getHuman() {
@@ -154,9 +155,9 @@ public class mainForm extends JFrame
         if(currentPosition > 0)
         {
             this.buttonForward.setToolTipText(this.human.getFullName());
-            clearFields();
+
             setHuman(history.get(currentPosition - 1));                            
-            setData();
+
             history.changePosition(Direction.Back);            
             if (history.getPosition() == 0)
             {
@@ -178,9 +179,7 @@ public class mainForm extends JFrame
         if(currentPosition < history.getSize() - 1)
         {
             this.buttonBack.setToolTipText(this.human.getFullName());   //устанавливаем подсказку предыдущего человека
-            clearFields();
-            setHuman(history.get(currentPosition + 1));                            
-            setData();
+            setHuman(history.get(currentPosition + 1));
             history.changePosition(Direction.Forward);            
             if (history.getPosition() >= history.getSize() - 1 || currentPosition == history.getMax())
             {
@@ -275,7 +274,7 @@ public class mainForm extends JFrame
         JTabbedPane tabPane = new JTabbedPane();
         tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("PrivateData"), panelPersonal);
         tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Parents"), panelParents);
-        tabPane.addTab("Семьи и дети", this.panelFamily);
+        tabPane.addTab("Семьи и дети", this.panelFamilies);
         tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Search"), this.panelSearch);
         this.add(tabPane);
         
@@ -397,7 +396,7 @@ public class mainForm extends JFrame
     
     private void clearFamilyTab()
     {
-        this.panelFamily.removeAll();
+        this.panelFamilies.removeAll();
     }
     
     private void clearSearchTab()
@@ -728,14 +727,19 @@ public class mainForm extends JFrame
  */    
     private void setFamilyData()
     {
-        ArrayList<String> childrenFromFamilies = new ArrayList<>(); 
+        ArrayList<String> childrenFromFamilies = new ArrayList<>();
+        
+        int lastY = 0;  //  Последнее значение Y панели семьи
+        int lastHeight = 0; // Последнее значение высоты панели семьи        
+        int PANEL_WIDTH = 500; //   ширина панели
+        int PANEL_HEIGHT = 70;  //  начальная высота панели
+        
         if (this.human.getFamsCount() > 0) // если имеются семьи
         {
 
             ArrayList<String> listF = this.human.getFamilies();
             
-            int lastY = 0;  //  Последнее значение Y панели семьи
-            int lastHeight = 0; // Последнее значение высоты панели семьи
+
             for (int i=0; i < this.human.getFamsCount(); i++)
             {
                 int height = 15;
@@ -751,7 +755,7 @@ public class mainForm extends JFrame
                 JPanel familyPanel = new JPanel(null);
                 Border border = BorderFactory.createTitledBorder("Семья");
                 familyPanel.setBorder(border);
-                familyPanel.setSize(500, 70 + fam.getCountChildren()*30);
+                familyPanel.setSize(PANEL_WIDTH, PANEL_HEIGHT + fam.getCountChildren()*30);
 
                 int x = 10;
                 int y = lastY + lastHeight + 5;
@@ -815,7 +819,7 @@ public class mainForm extends JFrame
                         fieldChild.setText(_child.getFullName());
                         familyPanel.add(fieldChild);
 
-                        fieldBDate.setText(_child.displayDate(_child.getBDate()));
+                        fieldBDate.setText(Relative.displayDate(_child.getBDate()));
                         fieldBDate.setLocation(x + 300, y);
                         familyPanel.add(fieldBDate);
 
@@ -830,15 +834,44 @@ public class mainForm extends JFrame
                     }
                 }
 
-                this.panelFamily.add(familyPanel); 
+                this.panelFamilies.add(familyPanel); 
             }                 
         }
-        this.panelFamily.repaint();    
-    }
-    
-    private void addChildToForm()
-    {
-    
+        ArrayList<String> children = this.human.getChildrenWhithoutFamily();
+        if (!children.isEmpty())
+        {
+            JPanel childrenPanel = new JPanel(null);
+            Border border = BorderFactory.createTitledBorder("Дети");
+            childrenPanel.setBorder(border);
+            childrenPanel.setSize(PANEL_WIDTH, 20 + children.size()*35);
+            int x = 10;
+            int y = lastY + lastHeight + 10;
+            childrenPanel.setLocation(x, y);
+            y += 10;
+            int height = 15;    //  высота записи о ребёнке
+            for (String child : children) {
+                JLabel fieldChild = new JLabel();
+                fieldChild.setSize(300, height);
+                fieldChild.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); 
+                fieldChild.setLocation(x, y);
+                Relative human = new Relative(child);
+                fieldChild.setText(human.getFullName());
+                fieldChild.setName(human.getID());
+                MouseListener ml = this.getMouseListener();
+                fieldChild.addMouseListener(ml);
+                JLabel fieldBDate = new JLabel();                        
+                fieldBDate.setSize(120, height);
+                fieldBDate.setFont(plainFont); 
+                fieldBDate.setLocation(x + fieldChild.getWidth(), y);
+                fieldBDate.setText(Relative.displayDate(human.getBDate()));
+                childrenPanel.add(fieldChild);
+                childrenPanel.add(fieldBDate);
+                y += height + 10;
+            }
+            
+            this.panelFamilies.add(childrenPanel);
+        }
+        this.panelFamilies.repaint();    
     }
     
 /**
@@ -855,7 +888,7 @@ public class mainForm extends JFrame
         this.panelResults.setLocation(new Point(0, 0));
         
 //  Строка запроса        
-        final JTextField fieldSearchText = new JTextField("Гапчич Игорь", 20);
+        final JTextField fieldSearchText = new JTextField("Ключевые слова", 20);
         fieldSearchText.setSize(400, 20);
         fieldSearchText.setLocation(100, 40);
         
@@ -1012,6 +1045,9 @@ public class mainForm extends JFrame
         this.setJMenuBar(mb);    
     }
     
+/**
+ * 
+ */    
     private void showSettins()
     {
         JFrame settForm = new JFrame("Settings");
