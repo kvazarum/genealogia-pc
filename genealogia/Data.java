@@ -48,103 +48,72 @@ public class Data {
     /
     */
     public Document getHumanData(String id)
-    {
-        try
-        {
-            Settings settings = new Settings();
-            String queryString = serverName + "?data=" + id + "&type=human" + "&user=" + settings.getUserName();
-            queryString += "&password=" + settings.getPassword();
-            URL url = new URL(queryString);
-            
-            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-            
-            DocumentBuilderFactory fact = DocumentBuilderFactory.newInstance();
-            DocumentBuilder db = fact.newDocumentBuilder();
-            
-            if (reader.readLine().compareTo("Unknown") != 0)
-            {
-                InputSource is = new InputSource(reader);
-                doc = db.parse(is);
-            }
-            else
-            {
-                doc = null;
-            }
-
-        }
-        catch (IOException | ParserConfigurationException | SAXException e)
-        {
-            System.out.println("Ошибка класса Data: " + e);
-        }
-        
-        return doc;
+    {        
+        return getData("human", id);
     }
     
     public Document getFamilyData(String id)
-    {
-        
-        try
-        {
-            URL url = new URL(serverName + "?data=" + id + "&type=family");
-            
-            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-            
-            DocumentBuilderFactory fact = DocumentBuilderFactory.newInstance();
-            DocumentBuilder db = fact.newDocumentBuilder();
-            
-            if (reader.readLine().compareTo("Unknown") != 0)
-            {
-                InputSource is = new InputSource(reader);
-                doc = db.parse(is);
-            }
-            else
-            {
-                doc = null;
-            }
-
-        }
-        catch (IOException | ParserConfigurationException | SAXException e)
-        {
-            System.out.println("Ошибка класса Data: " + e);
-        }
-        
-        return doc;
+    {   
+        return getData("family", id);
     }
    
    public Document getSearchResult(String searchString)
    {
+        String[] split = searchString.split(" ");
+        searchString = "";
+        for (int i=0; i<split.length; i++)
+        {
+            if (i<split.length - 1)
+            {
+                searchString += split[i] + ":";
+            }
+            else
+            {
+                searchString += split[i];
+            }
+        }  
+        
+        return getData("search", searchString);
+   }
+   
+/**
+ * Получение детей без одного известного родителя
+ * @param id идентификатор человека
+ * @return XML-документ
+ */   
+   public Document getChildrenWithoutFamily(String id)
+   {        
+        return getData("childrenOrf", id);   
+   }
+   
+   
+   private Document getData(String type, String id)
+   {
         try
         {
-            String[] split = searchString.split(" ");
-            searchString = "";
-            for (int i=0; i<split.length; i++)
-            {
-                if (i<split.length - 1)
-                {
-                    searchString += split[i] + ":";
-                }
-                else
-                {
-                    searchString += split[i];
-                }
-            }
-            String path = serverName + "?data=" + searchString + "&type=search";
-
-            URL url = new URL(path);
+            URL url = new URL(serverName + "?data=" + id + "&type=" + type);
             
-            InputStreamReader inputStr = new InputStreamReader(url.openStream());
-            BufferedReader reader = new BufferedReader(inputStr);
-
+            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+            
             DocumentBuilderFactory fact = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = fact.newDocumentBuilder();
+            
+            if (reader.readLine().compareTo("Unknown") != 0)
+            {
+                InputSource is = new InputSource(reader);
+                doc = db.parse(is);
+            }
+            else
+            {
+                doc = null;
+            }
 
-            InputSource is = new InputSource(reader);
-            doc = db.parse(is);
         }
         catch (IOException | ParserConfigurationException | SAXException e)
         {
             System.out.println("Ошибка класса Data: " + e);
-        }       
-        return doc;
+        }
+        
+        return doc;   
    }
 }
