@@ -39,28 +39,38 @@ public class Main {
      */
     public static void main(String[] args) 
     {
-        setSettings();
-        displayMainForm();   
+        showMainForm();   
     }
     
 /**    
  * Показ основной формы
  */
-    private static void displayMainForm()
+    private static void showMainForm()
     {
         mainForm form = new mainForm();
-        Settings sets = setSettings();
-        String id = sets.getDefaultHuman();
+        form.init();
+        Settings settings = setSettings();
+        String id = settings.getDefaultHuman();
         if (id == null)
         {
             id = "2";
-            sets.setDefaultHuman(id);
-        }        
-        form.setHuman(id);
-        form.history.addToHistory(form.getRelative());
+            settings.setDefaultHuman(id);
+        }
+        History history = form.history;
+        if (history.getSize() > 0 && history.getPosition() < history.getSize())
+        {
+            form.setHuman(history.getCurrentHuman());
+        }
+        else
+        {
+            form.setHuman(id);
+            form.history.addToHistoryList(form.getRelative());
+        }
+
         form.setForm();
         form.pack();
         form.setSize(800, 600);
+        form.setHistoryButtons();
         form.setVisible(true);
     }
     
