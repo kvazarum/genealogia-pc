@@ -7,7 +7,6 @@
 package genealogia.ui;
 
 import genealogia.Data;
-//import genealogia.DataReceiver;
 import genealogia.Family;
 import genealogia.History;
 import genealogia.Relative;
@@ -25,6 +24,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
@@ -118,6 +119,7 @@ public class mainForm extends JFrame
     
     private final static String BACK_ICON_NAME = "back.png";
     
+    
 /**
  * Установка id человека, данные которого отображает форма
  * @param id - идентификатор человека
@@ -149,19 +151,45 @@ public class mainForm extends JFrame
         return this.human;
     } 
     
+    public void setHistoryButtons()
+    {
+        if (this.history.getSize() > 1)
+        {
+            if (this.history.getPosition() == 0)
+             {
+                setButtonBackEnable(false);
+                this.buttonBack.setToolTipText("");
+                setButtonForwardEnable(true);
+             }
+             if (this.history.getPosition() > 0 && this.history.getPosition() < this.history.getSize() - 1)
+             {
+                 setButtonBackEnable(true);
+                 setButtonForwardEnable(true);
+                 this.buttonBack.setToolTipText(history.get(history.getPosition() - 1).getFullName());
+                 this.buttonForward.setToolTipText(history.get(history.getPosition() + 1).getFullName());
+             } 
+
+             if (this.history.getPosition() == this.history.getSize() - 1)
+             {
+                 setButtonForwardEnable(false);
+                 setButtonBackEnable(true);
+                 this.buttonForward.setToolTipText("");
+                 this.buttonBack.setToolTipText(history.get(history.getPosition() - 1).getFullName());
+             }
+        }
+    }
+    
     private void historyBack()
     {
         int currentPosition = history.getPosition(); 
         if(currentPosition > 0)
         {
             this.buttonForward.setToolTipText(this.human.getFullName());
-
             setHuman(history.get(currentPosition - 1));                            
-
-            history.changePosition(Direction.Back);            
+            
             if (history.getPosition() == 0)
             {
-                this.buttonBack.setEnabled(false);
+                //this.buttonBack.setEnabled(false);
                 this.buttonBack.setToolTipText("");
             }
             else
@@ -169,7 +197,9 @@ public class mainForm extends JFrame
                 Relative prev = history.get(history.getPosition() - 1);
                 this.buttonBack.setToolTipText(prev.getFullName());
             }
-            buttonForward.setEnabled(true);         
+            history.changePosition(Direction.Back);            
+            //buttonForward.setEnabled(true);         
+            setHistoryButtons();
         }
     }
     
@@ -179,19 +209,20 @@ public class mainForm extends JFrame
         if(currentPosition < history.getSize() - 1)
         {
             this.buttonBack.setToolTipText(this.human.getFullName());   //устанавливаем подсказку предыдущего человека
-            setHuman(history.get(currentPosition + 1));
-            history.changePosition(Direction.Forward);            
+            setHuman(history.get(currentPosition + 1));           
             if (history.getPosition() >= history.getSize() - 1 || currentPosition == history.getMax())
             {
                 this.buttonForward.setEnabled(false);
             }
             this.buttonForward.setToolTipText(history.get(history.getPosition() + 1).getFullName());
-            this.buttonBack.setEnabled(true);
+            //this.buttonBack.setEnabled(true);
+            history.changePosition(Direction.Forward); 
         }
         else
         {
             this.buttonForward.setToolTipText(""); //очищаем подсказку следующего человека
         }
+        setHistoryButtons();
     }
     
     protected Image createImageIcon(String path) {
@@ -217,7 +248,6 @@ public class mainForm extends JFrame
         //buttonBack.setIcon(new ImageIcon(BACK_ICON_NAME, "Назад"));
         
         buttonBack.setText("<<");
-        buttonBack.setToolTipText("Назад");
         buttonBack.setPreferredSize(new Dimension(100,20));
         buttonBack.setSize(100,20);
         buttonBack.setVerticalTextPosition(AbstractButton.CENTER);
@@ -230,7 +260,6 @@ public class mainForm extends JFrame
         });
         
         buttonForward.setText(">>");
-        buttonForward.setToolTipText("Вперёд");
         buttonForward.setPreferredSize(new Dimension(100,20));
         buttonForward.setSize(100,20);
         buttonForward.setVerticalTextPosition(AbstractButton.CENTER);
@@ -329,20 +358,25 @@ public class mainForm extends JFrame
         
         String _componentName = component.getName();
         if (!_componentName.equals("-1"))
-        {
-            this.buttonBack.setToolTipText(this.human.getFullName());            
+        {          
             clearFields();
             setHuman(_componentName);
-            this.history.addToHistory(this.getHuman());
-            this.buttonBack.setEnabled(true);
-            
-            this.buttonForward.setToolTipText(""); //очищаем подсказку для движения по истории вперёд
-            this.buttonForward.setEnabled(false);
+            this.history.removeHighPosition();
+            this.history.addToHistoryList(this.getHuman());
+            this.history.changePosition();
             setData();
+            this.setHistoryButtons();
         }
 
         component.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         component.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));    
+    }
+    
+    private void onClose()
+    {
+        history.saveToXML();
+        history.saveToFile();
+        System.exit(0);
     }
     
 /**
@@ -797,6 +831,8 @@ public class mainForm extends JFrame
 
                     for (int k=0; k < fam.getCountChildren(); k++)
                     {
+//                        setHumanRow(familyPanel, new Point(x, y + 50), fam.getChild(k));
+//                        y += height + 17;
                         JLabel fieldChild = new JLabel();
                         fieldChild.setSize(300, height);
                         fieldChild.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -849,29 +885,46 @@ public class mainForm extends JFrame
             childrenPanel.setLocation(x, y);
             y += 10;
             int height = 15;    //  высота записи о ребёнке
-            for (String child : children) {
-                JLabel fieldChild = new JLabel();
-                fieldChild.setSize(300, height);
-                fieldChild.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); 
-                fieldChild.setLocation(x, y);
-                Relative human = new Relative(child);
-                fieldChild.setText(human.getFullName());
-                fieldChild.setName(human.getID());
-                MouseListener ml = this.getMouseListener();
-                fieldChild.addMouseListener(ml);
-                JLabel fieldBDate = new JLabel();                        
-                fieldBDate.setSize(120, height);
-                fieldBDate.setFont(plainFont); 
-                fieldBDate.setLocation(x + fieldChild.getWidth(), y);
-                fieldBDate.setText(Relative.displayDate(human.getBDate()));
-                childrenPanel.add(fieldChild);
-                childrenPanel.add(fieldBDate);
-                y += height + 10;
+            for (String child : children) {                
+                setHumanRow(childrenPanel, new Point(x, y), child);
+                y = y + height + 17;
             }
             
             this.panelFamilies.add(childrenPanel);
         }
         this.panelFamilies.repaint();    
+    }
+    
+    private void setHumanRow(JPanel _panel, Point _point, String humanID)
+    {
+        int height = 15;
+        Relative human = new Relative(humanID);
+        //ФИО человека
+        JLabel fieldHuman = new JLabel();
+        fieldHuman.setSize(300, height);
+        fieldHuman.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); 
+        fieldHuman.setLocation(_point);
+        fieldHuman.setText(human.getFullName());
+        fieldHuman.setName(human.getID()); 
+        fieldHuman.setFont(plainFont);
+        MouseListener ml = this.getMouseListener();
+        fieldHuman.addMouseListener(ml);        
+        _panel.add(fieldHuman);
+        //Дата рождения
+        JLabel fieldBDate = new JLabel();                        
+        fieldBDate.setSize(120, height);
+        fieldBDate.setFont(plainFont);        
+        fieldBDate.setLocation(_point.x + fieldHuman.getWidth(), _point.y);
+        fieldBDate.setText(Relative.displayDate(human.getBDate())); 
+        _panel.add(fieldBDate);
+        //Аватар
+        AvatarLabel avatar = new AvatarLabel();
+        avatar.setSize(avatarSize);
+        avatar.setLocation(_point.x + 430, _point.y);
+        if (avatar.setAvatar(human.getPathToAvatar()))
+        {
+            _panel.add(avatar);
+        }        
     }
     
 /**
@@ -1022,7 +1075,7 @@ public class mainForm extends JFrame
         {           
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.exit(0);             
+                onClose();             
             }           
         });
         
@@ -1054,4 +1107,24 @@ public class mainForm extends JFrame
         settForm.setSize(400, 200);
         settForm.setVisible(true);
     }
+    
+    public void init()
+    {
+        this.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                onClose();
+            }
+        });
+        this.history = new History();
+    }
+    
+    public void setButtonBackEnable(boolean mode)
+    {
+        this.buttonBack.setEnabled(mode);
+    }
+    
+    public void setButtonForwardEnable(boolean mode)
+    {
+        this.buttonForward.setEnabled(mode);
+    }    
 }
