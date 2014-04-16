@@ -103,6 +103,8 @@ public class mainForm extends JFrame
     
     JPanel panelParents = new JPanel(null);
     
+    JMenu historyMenu = new JMenu("History");
+    
     Dimension avatarSize = new Dimension(30, 30);
     
     public History history = new History();
@@ -144,7 +146,7 @@ public class mainForm extends JFrame
     {
         clearFields();        
         this.human = hmn;
-        setData();        
+        setData();
     }
 
     public Relative getHuman() {
@@ -177,53 +179,50 @@ public class mainForm extends JFrame
                  this.buttonBack.setToolTipText(history.get(history.getPosition() - 1).getFullName());
              }
         }
+        this.setHistoryMenu();
     }
     
-    private void historyBack()
+    private void moveHistory(Direction direction)
     {
-        int currentPosition = history.getPosition(); 
-        if(currentPosition > 0)
+        int currentPosition = history.getPosition();
+        Relative human = null;        
+        if(direction == Direction.Back && currentPosition > 0)
         {
-            this.buttonForward.setToolTipText(this.human.getFullName());
-            setHuman(history.get(currentPosition - 1));                            
+            human = history.get(currentPosition - 1);  
             
-            if (history.getPosition() == 0)
-            {
-                //this.buttonBack.setEnabled(false);
-                this.buttonBack.setToolTipText("");
-            }
-            else
+            if (history.getPosition() != 0)
             {
                 Relative prev = history.get(history.getPosition() - 1);
-                this.buttonBack.setToolTipText(prev.getFullName());
             }
-            history.changePosition(Direction.Back);            
-            //buttonForward.setEnabled(true);         
-            setHistoryButtons();
         }
-    }
-    
-    private void historyForward()
-    {
-        int currentPosition = history.getPosition(); 
-        if(currentPosition < history.getSize() - 1)
+        else
         {
-            this.buttonBack.setToolTipText(this.human.getFullName());   //устанавливаем подсказку предыдущего человека
-            setHuman(history.get(currentPosition + 1));           
+            human = history.get(currentPosition + 1);           
             if (history.getPosition() >= history.getSize() - 1 || currentPosition == history.getMax())
             {
                 this.buttonForward.setEnabled(false);
             }
-            this.buttonForward.setToolTipText(history.get(history.getPosition() + 1).getFullName());
-            //this.buttonBack.setEnabled(true);
-            history.changePosition(Direction.Forward); 
         }
-        else
-        {
-            this.buttonForward.setToolTipText(""); //очищаем подсказку следующего человека
-        }
-        setHistoryButtons();
+        
+        setHuman(human);
+        history.changePosition(direction);        
+        setHistoryButtons();        
     }
+    
+    private void moveHistory(int i)
+    {
+        int currentPosition = history.getPosition();
+        if (i >= 0 && i<= this.history.getSize() - 1)
+        {          
+            clearFields();
+            setHuman(this.history.get(i));
+            this.history.changePosition();
+            setData();
+            this.setHistoryButtons();   
+            setHistoryButtons();            
+        }
+    }    
+    
     
     protected Image createImageIcon(String path) {
         Image img = null;
@@ -255,7 +254,7 @@ public class mainForm extends JFrame
         buttonBack.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                historyBack();
+                moveHistory(Direction.Back);
             }
         });
         
@@ -267,7 +266,7 @@ public class mainForm extends JFrame
         buttonForward.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                historyForward();
+                moveHistory(Direction.Forward);
             }
         });        
         buttonBack.setEnabled(false);
@@ -372,6 +371,10 @@ public class mainForm extends JFrame
         component.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));    
     }
     
+/**
+ * Executes on close of application,
+ * saves history data to the XML-file
+ */    
     private void onClose()
     {
         history.saveToXML();
@@ -1091,9 +1094,12 @@ public class mainForm extends JFrame
         };
         settingsMenu.addActionListener(al);
         
+        
+        
         JMenuBar mb = new JMenuBar();
         mb.add(fileMenu);
         mb.add(settingsMenu);
+        mb.add(historyMenu);
         
         this.setJMenuBar(mb);    
     }
@@ -1108,6 +1114,9 @@ public class mainForm extends JFrame
         settForm.setVisible(true);
     }
     
+/**
+ * Added function onClose()
+ */    
     public void init()
     {
         this.addWindowListener(new WindowAdapter() {
@@ -1116,15 +1125,57 @@ public class mainForm extends JFrame
             }
         });
         this.history = new History();
+        this.setHistoryMenu();
     }
     
+/**
+ * Sets enable of the button
+ * @param mode 
+ */    
     public void setButtonBackEnable(boolean mode)
     {
         this.buttonBack.setEnabled(mode);
     }
     
+/**
+ * Sets enable of the button
+ * @param mode 
+ */    
     public void setButtonForwardEnable(boolean mode)
     {
         this.buttonForward.setEnabled(mode);
-    }    
+    }
+    
+    /**
+     * Sets the history menu based on a history state
+     */
+    private void setHistoryMenu()
+    {
+        if (this.historyMenu.getItemCount() > 0)
+        {
+            this.historyMenu.removeAll();
+        }
+        for (int i = 0; i < this.history.getSize(); i++)
+        {
+            JMenuItem element = new JMenuItem(this.history.get(i).getFullName());
+            if (i == this.history.getPosition())
+            {
+                element.setFont(boldFont);
+            }
+            else
+            {
+                element.setFont(plainFont);
+            }
+            final int index = i;
+            ActionListener al = new ActionListener() 
+            {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    moveHistory(index);
+                }
+            };
+            element.addActionListener(al);
+            this.historyMenu.add(element);
+        }
+    }
 }
