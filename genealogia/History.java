@@ -6,6 +6,7 @@
 
 package genealogia;
 
+import abstracts.AFile;
 import genealogia.enums.Direction;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -26,47 +27,34 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.traversal.NodeIterator;
 import org.xml.sax.SAXException;
 
 /**
  *
  * @author kvazar
  */
-public class History {
+public class History extends AFile{
     
     public History(){
         this.init();
     }    
 /**
- * Список id просмотренных людей
+ * List of <tt>id</tt> of visited people
  */    
     private ArrayList<Relative> historyList = new ArrayList<Relative>();
     
 /**
- * Максимальное количество записей id
+ * Maximum count of the records in the history
  */
-    private static final int MAX_HISTORY_LENGHT = 5;
+    private static final int MAX_HISTORY_LENGHT = 10;
+    
 /**
- * Текущая позиция в истории просмотров
+ * Current position in the history list
  */
     private int position = -1; 
-    
-    private final String fileName = ".history.xml";
-    
-    Document doc;
-
-    public void setDoc(Document doc) {
-        this.doc = doc;
-    }
-
-
-    public String getFileName() {
-        return fileName;
-    }
-    
+       
 /**
- * Append instance of human in list of visited people
+ * Appends instance of human in list of visited people
  * @param human instance of human 
  */
     public void addToHistoryList(Relative human)
@@ -79,9 +67,9 @@ public class History {
     }
 
 /**
- * Removes elements from the specified position to end of list
+ * Removes elements from the specified position to the end of history list
  */    
-    public void removeHighPosition()
+    public void removeAbovePosition()
     {
         if (this.getPosition() != this.getSize() - 1)
         {
@@ -93,7 +81,7 @@ public class History {
     }
     
 /**
- * Change current position in the history list
+ * Changes current position in the history list
  */    
     public void changePosition()
     {
@@ -101,7 +89,7 @@ public class History {
     }
     
 /**
- * Get size of the history list
+ * Gets the size of the history list
  * @return 
  */    
     public int getSize()
@@ -110,14 +98,20 @@ public class History {
     }
     
 /**
- * return maximum count of record in the history list
+ * Returns maximum count of record in the history list
  * @return maximum count of record in the history list
  */    
     public int getMax()
     {
         return MAX_HISTORY_LENGHT;
     }
-    
+   
+/**
+ * Returns instance of the human in the history list,
+ * defined by index <tt>id</tt>
+ * @param id index in the history list
+ * @return 
+ */    
     public Relative get(int id)
     {
         if (id >= 0 && id <= MAX_HISTORY_LENGHT)
@@ -130,25 +124,13 @@ public class History {
         }
     }
     
-    public Relative getCurrentHuman()
-    {
-        Relative result;
-        if (this.position < historyList.size())
-        {
-            result = historyList.get(this.position);
-        }
-        else
-        {
-            result = null;
-        }
-        return result;
-    }
-    
-    public void remove(int index)
-    {
-        this.historyList.remove(index);
-    }
-    
+/**
+ * Changes current position in the history list
+ * if Back -reduces
+ * if Forward - increases
+ * @param direction direction of move in history, Back or Forward
+ * @return current position in the history list
+ */    
     public int changePosition(Direction direction)
     {
         if (direction == Direction.Back)
@@ -168,53 +150,46 @@ public class History {
         return this.position;
     }
 
+/**
+ * Returns position in the history list
+ * @return position in the history list
+ */    
     public int getPosition() {
         return position;
     }
 
+/**
+ * Sets position
+ * @param position position in the history list
+ */    
     public void setPosition(int position) {
         this.position = position;
     }
     
+/**
+ * Saves XML document to file
+ */    
     public void saveToFile()
     {
         File historyFile = this.getFile();
         try
         {
             Transformer tf = TransformerFactory.newInstance().newTransformer();
-            tf.transform(new DOMSource(this.doc), new StreamResult(new FileOutputStream(historyFile)));    
+            tf.transform(new DOMSource(this.getDoc()), new StreamResult(new FileOutputStream(historyFile)));    
         }
         catch(FileNotFoundException |TransformerException ex)
         {
             System.out.println("Error saving file. - " + ex);
         }        
         
-    }
-    
-/**
- * Return File of history
- * @return File
- */    
-    public File getFile()
-    {
-        File homeDir = new File(System.getProperty("user.home")); // домашняя папка
-        File programDir = new File(homeDir, Settings.getAppHomeDir()); // папка программы
-        
-        if (!programDir.exists())
-        {
-            programDir.mkdir();
-        }        
-        
-        File historyFile = new File(programDir, this.getFileName());
-        
-        return historyFile;
-    }    
+    }   
     
 /**    
  * Инициализация, начальное заполнение истории
  */
     private void init(){
-    
+        
+        this.setFileName(".history.xml");
         File _historyFile = this.getFile();
 
         if (!_historyFile.exists()){
@@ -263,14 +238,14 @@ public class History {
     } 
     
 /**
- * Сохранение текущего состояния истории в XML-файл
+ * Saves history state to XML-file
  */    
     public void saveToXML()
     {
-        Node _rootNode = doc.getElementsByTagName("history").item(0); //root node
+        Node _rootNode = this.getDoc().getElementsByTagName("history").item(0); //root node
         
 //  Очищаем предыдущую историю        
-        NodeList _nods = doc.getElementsByTagName("element");
+        NodeList _nods = this.getDoc().getElementsByTagName("element");
         int _count = _nods.getLength(); // count of nodes
         while (_nods.getLength() >0 ) 
         {
@@ -287,25 +262,27 @@ public class History {
 
         for (Relative human : this.historyList) 
         {
-            Element element = doc.createElement("element");
+            Element element = this.getDoc().createElement("element");
             element.setTextContent(human.getID());
             _rootNode.appendChild(element);
         }
-        Node element = doc.getElementsByTagName("position").item(0);
+        Node element = this.getDoc().getElementsByTagName("position").item(0);
         element.setTextContent(String.valueOf(this.getPosition()));
     }
     
+/**
+ * Restores state of history from XML-file
+ */    
     private void restoreFromXML()
     {
-        Node _rootNode = doc.getElementsByTagName("history").item(0); //root node
-        NodeList _nods = doc.getElementsByTagName("element");
+        NodeList _nods = this.getDoc().getElementsByTagName("element");
         int _count = _nods.getLength(); // count of nodes
         for (int i = 0; i < _count; i++) 
         {
             Relative human = new Relative(_nods.item(i).getTextContent());
             this.addToHistoryList(human);
         }
-        Node element = doc.getElementsByTagName("position").item(0);
+        Node element = this.getDoc().getElementsByTagName("position").item(0);
         this.setPosition(Integer.parseInt(element.getTextContent()));
     }
 }
