@@ -13,7 +13,7 @@ import org.xml.sax.SAXException;
  */
 public class Main {
     
-    private String path = Settings.getPath() + "pics/";
+    private String path = Settings.getPATH() + "pics/";
     Settings settings;
     
 /**
@@ -59,7 +59,7 @@ public class Main {
         History history = form.history;
         if (history.getSize() > 0 && history.getPosition() < history.getSize())
         {
-            form.setHuman(history.getCurrentHuman());
+            form.setHuman(history.get(history.getPosition()));
         }
         else
         {
