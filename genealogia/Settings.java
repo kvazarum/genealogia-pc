@@ -6,6 +6,7 @@
 
 package genealogia;
 
+import abstracts.AFile;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -20,29 +21,27 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
+import sun.security.util.Length;
 
 /**
  *
  * @author kvazar
  */
-public class Settings {
+public class Settings extends AFile{
 
     public Settings() throws SAXException, ParserConfigurationException{
         this.init();
     }
     
-    private static final String PATH = "http://gapchich.ru/";
-    private static final String APP_HOME_DIR = "Genealogia";
+    //private static final String PATH = "http://gapchich.ru/";
     
     private String url;
-    private String fileName = ".settings.xml";
+//    private String fileName = ".settings.xml";
     private String password;
     private String userName;
     private String defaultUser = null;
     private String defaultHuman = null;
     
-    Document doc;
-
     public String getPassword() {
         return this.password;
     }
@@ -51,32 +50,12 @@ public class Settings {
         this.password = password;
     }
 
-    public static String getPath() {
-        return PATH;
-    }
-
     public String getUserName() {
         return this.userName;
     }
 
     public void setUserName(String userName) {
         this.userName = userName;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public Document getDoc() {
-        return doc;
-    }
-
-    public void setDoc(Document doc) {
-        this.doc = doc;
     }
 
     public String getUrl() {
@@ -115,9 +94,12 @@ public class Settings {
     
     private void setNodeValue(String nodeName, String nodeValue)
     {
-        Node dh = doc.getElementsByTagName(nodeName).item(0);
-        dh.setTextContent(nodeValue);
-        this.saveToFile();
+        NodeList _dh = this.getDoc().getElementsByTagName(nodeName);
+        if (_dh.getLength() > 0)
+        {
+            _dh.item(0).setTextContent(nodeValue);
+            this.saveToFile();
+        }
     }
     
         
@@ -126,7 +108,7 @@ public class Settings {
  * Инициализация, начальное заполнение переменных
  */
     private void init(){
-    
+        this.setFileName(".settings.xml");
         File settingsFile = this.getFile();
 
         if (!settingsFile.exists()){
@@ -141,7 +123,7 @@ public class Settings {
                 document.appendChild(rootElement);
                 
                 Element path = document.createElement("path");
-                path.setTextContent(Settings.getPath());
+                path.setTextContent(Settings.getPATH());
                 rootElement.appendChild(path);
                 
                 Element user = document.createElement("user");
@@ -149,7 +131,6 @@ public class Settings {
                 rootElement.appendChild(user);
                 
                 Element password = document.createElement("password");
-                //password.setTextContent("unknown");
                 rootElement.appendChild(password); 
                 
                 Element defaultUser = document.createElement("defaultUser");                
@@ -160,18 +141,14 @@ public class Settings {
                 
                 this.setDoc(document);
                 
-                //Записываем файл
-                this.saveToFile();
-                
-                
+                this.saveToFile();  //Записываем файл                
             } 
             catch (IOException e) 
             {
                 System.out.println(e);
             } catch (ParserConfigurationException ex) {
                 Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            
+            }            
         }
         else
         {
@@ -183,9 +160,10 @@ public class Settings {
                 this.setDoc(document);
                 if (this.getUrl() == null)
                 {
-                    this.setUrl(this.getPath());
+                    this.setUrl(this.getPATH());
                 }
-            } catch (IOException | ParserConfigurationException | SAXException ex) {
+            } 
+            catch (IOException | ParserConfigurationException | SAXException ex) {
                 Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, null, ex);
             }       
         }        
@@ -199,32 +177,12 @@ public class Settings {
         File settingsFile = this.getFile();        
         try
         {
-            Transformer tf = TransformerFactory.newInstance().newTransformer();
-            tf.transform(new DOMSource(this.doc), new StreamResult(new FileOutputStream(settingsFile)));    
+            Transformer _transformer = TransformerFactory.newInstance().newTransformer();
+            _transformer.transform(new DOMSource(this.getDoc()), new StreamResult(new FileOutputStream(settingsFile)));    
         }
         catch(FileNotFoundException |TransformerException ex)
         {
-            
+            System.out.println(ex);
         }
-    }
-    
-/**
- * Return File of settings
- * @return File
- */    
-    public File getFile()
-    {
-        File homeDir = new File(System.getProperty("user.home")); // домашняя папка
-        File programDir = new File(homeDir, APP_HOME_DIR); // папка программы
-        
-        if (!programDir.exists())
-        {
-            programDir.mkdir();
-        }        
-        
-        File settingsFile = new File(programDir, this.getFileName());
-        
-        return settingsFile;
-    }
-    
+    }    
 }
