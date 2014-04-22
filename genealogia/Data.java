@@ -43,10 +43,9 @@ public class Data {
     
     private static String serverName;
     
-    /*
-    /   Возвращает ХМЛ-дерево, содержащее данные человека
-    /
-    */
+/*
+/   Возвращает ХМЛ-дерево, содержащее данные человека
+*/
     public Document getHumanData(String id)
     {        
         return getData("human", id);
@@ -56,9 +55,14 @@ public class Data {
     {   
         return getData("family", id);
     }
+    
+    public Document getClans(String id)
+    {
+        return getData("clans", id);
+    }
    
-   public Document getSearchResult(String searchString)
-   {
+    public Document getSearchResult(String searchString)
+    {
         String[] split = searchString.split(" ");
         searchString = "";
         for (int i=0; i<split.length; i++)
@@ -74,7 +78,7 @@ public class Data {
         }  
         
         return getData("search", searchString);
-   }
+    }
    
 /**
  * Получение детей без одного известного родителя
@@ -86,14 +90,23 @@ public class Data {
         return getData("childrenOrf", id);   
    }
    
-   
+/**
+ * 
+ * @param type String
+ * @param id String
+ * @return Document XML-document
+ */   
    private Document getData(String type, String id)
    {
         try
         {
-            URL url = new URL(serverName + "?data=" + id + "&type=" + type);
+            URL url = new URL(serverName + "?data=" + id + "&type=" + type); 
+            URLConnection uc = url.openConnection();
+            uc.setDoOutput(true);
+            uc.setUseCaches(true);
+            //BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(uc.getInputStream()));
             
-            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
             
             DocumentBuilderFactory fact = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = fact.newDocumentBuilder();
@@ -107,6 +120,7 @@ public class Data {
             {
                 doc = null;
             }
+            reader.close();
 
         }
         catch (IOException | ParserConfigurationException | SAXException e)
