@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 package genealogia.ui;
 
@@ -30,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import static java.util.ResourceBundle.getBundle;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -95,15 +91,26 @@ public class mainForm extends JFrame
 
 //  Панель поиска
     JPanel panelSearch = new JPanel(null);
-    
+
+//  Панель результатов поиска
     JPanel panelResults = new JPanel(null);
     
+//  Панель отца    
     JPanel panelFather = new JPanel(null);  
-    JPanel panelMother = new JPanel(null);
     
+//  Панель матери    
+    JPanel panelMother = new JPanel(null);
+
+//  Панель родителей    
     JPanel panelParents = new JPanel(null);
     
-    JMenu historyMenu = new JMenu("History");
+//  Cписок родов
+    JPanel panelClans = new JPanel(null);
+    
+//  Панель закладок    
+    JTabbedPane tabPane = new JTabbedPane();    
+    
+    JMenu historyMenu = new JMenu(getBundle("genealogia/Bundle").getString("History"));
     
     Dimension avatarSize = new Dimension(30, 30);
     
@@ -121,14 +128,14 @@ public class mainForm extends JFrame
     
     private final static String BACK_ICON_NAME = "back.png";
     
+    final JTextField fieldSearchText = new JTextField("Ключевые слова", 20);
+    
     
 /**
  * Установка id человека, данные которого отображает форма
  * @param id - идентификатор человека
  */    
     public void setHuman(String id){
-//        Thread dr = new DataReceiver(id, this);
-//        dr.start();
         Relative hmn = new Relative(id);      
         this.setHuman(hmn);
     }
@@ -146,7 +153,7 @@ public class mainForm extends JFrame
     {
         clearFields();        
         this.human = hmn;
-        setData();
+       // setData();
     }
 
     public Relative getHuman() {
@@ -188,38 +195,31 @@ public class mainForm extends JFrame
         Relative human = null;        
         if(direction == Direction.Back && currentPosition > 0)
         {
-            human = history.get(currentPosition - 1);  
-            
-            if (history.getPosition() != 0)
-            {
-                Relative prev = history.get(history.getPosition() - 1);
-            }
+            human = history.get(currentPosition - 1);
         }
         else
         {
-            human = history.get(currentPosition + 1);           
-            if (history.getPosition() >= history.getSize() - 1 || currentPosition == history.getMax())
-            {
-                this.buttonForward.setEnabled(false);
-            }
+            human = history.get(currentPosition + 1);
         }
         
         setHuman(human);
         history.changePosition(direction);        
         setHistoryButtons();        
     }
-    
-    private void moveHistory(int i)
+
+/**
+ * Moves to human, defined by index <tt>i</tt>
+ * @param index index in the history list
+ */    
+    private void moveHistory(int index)
     {
-        int currentPosition = history.getPosition();
-        if (i >= 0 && i<= this.history.getSize() - 1)
+        if (index >= 0 && index <= this.history.getSize() - 1)
         {          
             clearFields();
-            setHuman(this.history.get(i));
-            this.history.changePosition();
+            setHuman(this.history.get(index));
+            this.history.changePosition(index);
             setData();
-            this.setHistoryButtons();   
-            setHistoryButtons();            
+            this.setHistoryButtons();           
         }
     }    
     
@@ -239,16 +239,20 @@ public class mainForm extends JFrame
     
     private void setToolBar()
     {
+        final int TOOLBAR_WIDTH = 450;
+        final int TOOLBAR_HEIGHT = 20;
+        
+        final int BUTTON_WIDTH = 100;
+        final int BUTTON_HEIGHT = 20;
+        
         JToolBar jtb = new JToolBar("my toolbar");
         jtb.setFloatable(true);
-        jtb.setPreferredSize(new Dimension(450, 20));
+        jtb.setPreferredSize(new Dimension(TOOLBAR_WIDTH, TOOLBAR_HEIGHT));
         this.getContentPane().add(jtb, BorderLayout.NORTH);
-
-        //buttonBack.setIcon(new ImageIcon(BACK_ICON_NAME, "Назад"));
         
         buttonBack.setText("<<");
-        buttonBack.setPreferredSize(new Dimension(100,20));
-        buttonBack.setSize(100,20);
+        buttonBack.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        buttonBack.setSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         buttonBack.setVerticalTextPosition(AbstractButton.CENTER);
         buttonBack.setHorizontalTextPosition(AbstractButton.LEADING);
         buttonBack.addActionListener(new ActionListener() {
@@ -257,10 +261,11 @@ public class mainForm extends JFrame
                 moveHistory(Direction.Back);
             }
         });
+        buttonBack.setEnabled(false);        
         
         buttonForward.setText(">>");
-        buttonForward.setPreferredSize(new Dimension(100,20));
-        buttonForward.setSize(100,20);
+        buttonForward.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        buttonForward.setSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         buttonForward.setVerticalTextPosition(AbstractButton.CENTER);
         buttonForward.setHorizontalTextPosition(AbstractButton.LEADING);
         buttonForward.addActionListener(new ActionListener() {
@@ -269,8 +274,9 @@ public class mainForm extends JFrame
                 moveHistory(Direction.Forward);
             }
         });        
-        buttonBack.setEnabled(false);
         buttonForward.setEnabled(false);
+
+//  Adding buttons to panel        
         jtb.add(this.buttonBack);        
         jtb.add(this.buttonForward);
         
@@ -299,11 +305,11 @@ public class mainForm extends JFrame
 //  Панель персональных данных        
         this.setPersonalPanel();
         
-        JTabbedPane tabPane = new JTabbedPane();
-        tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("PrivateData"), panelPersonal);
-        tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Parents"), panelParents);
+//  Панель поиска
+        tabPane.addTab(getBundle("genealogia/Bundle").getString("PrivateData"), panelPersonal);
+        tabPane.addTab(getBundle("genealogia/Bundle").getString("Parents"), panelParents);
         tabPane.addTab("Семьи и дети", this.panelFamilies);
-        tabPane.addTab(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Search"), this.panelSearch);
+        tabPane.addTab(getBundle("genealogia/Bundle").getString("Search"), this.panelSearch);
         this.add(tabPane);
         
         this.pack();       
@@ -339,11 +345,46 @@ public class mainForm extends JFrame
         // Отчество
         this.fieldMName.setText(human.getMiddleName());
         
+        //  Список родов        
+        setClans();
+        
         setParentsData();
         
 //  Семьи
         this.setFamilyData();        
         
+    }
+    
+    
+    private void setClans()
+    {
+        final int LABEL_WIDTH = 90;     // width of label
+        final int LABEL_HEIGHT = 20;    // height of label
+        
+        int label_x = 10;   // start value of x coordinate
+        int label_y = 5;    // start value of y coordinate
+        
+        ArrayList<String> _clans = this.human.getClans();   // list of clans
+        for (String clan : _clans) {
+            if (this.panelClans.getWidth() < label_x + LABEL_WIDTH)
+            {
+                if (this.panelClans.getHeight() < (label_y + 2*LABEL_HEIGHT + 2))
+                {
+                    this.panelClans.setSize(this.panelClans.getWidth(), this.panelClans.getHeight() + 20);
+                }
+                label_y += LABEL_HEIGHT + 5;
+                label_x = 10;
+            }
+            JLabel _labelClan = new JLabel(clan);
+            _labelClan.setSize(LABEL_WIDTH, LABEL_HEIGHT);
+            _labelClan.setLocation(label_x, label_y);
+            _labelClan.setFont(plainFont);
+            _labelClan.addMouseListener(getMouseListenerOnClan());
+            _labelClan.setName(clan);
+            this.panelClans.add(_labelClan);
+            label_x += LABEL_WIDTH + 5;
+        } 
+        this.panelClans.repaint(); System.out.println("кол-во " + _clans.size());
     }
    
 /**
@@ -360,9 +401,9 @@ public class mainForm extends JFrame
         {          
             clearFields();
             setHuman(_componentName);
-            this.history.removeHighPosition();
+            this.history.removeAbovePosition();
             this.history.addToHistoryList(this.getHuman());
-            this.history.changePosition();
+            this.history.setLastPosition();
             setData();
             this.setHistoryButtons();
         }
@@ -383,10 +424,10 @@ public class mainForm extends JFrame
     }
     
 /**
- * 
+ * Sets MouseListener for human's label 
  * @return MouseListener
  */    
-    public MouseListener getMouseListener()
+    public MouseListener getMouseListenerOnHuman()
     {
         MouseListener _ml = new MouseListener()
         {
@@ -396,7 +437,7 @@ public class mainForm extends JFrame
                 //Получаем кол-во щелчков
                 int click = e.getClickCount();
                 
-                if (click == 1)
+                if (click == 2)
                 {
                     onClick(e.getComponent());
                 }
@@ -425,22 +466,106 @@ public class mainForm extends JFrame
         return _ml;
     }
     
+/**
+ * Sets MouseListener for clan's label 
+ * @return MouseListener
+ */    
+    public MouseListener getMouseListenerOnClan()
+    {
+        MouseListener _ml = new MouseListener()
+        {
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                //Получаем кол-во щелчков
+                int click = e.getClickCount();
+                
+                if (click == 2)
+                {
+                    onClanClick(e.getComponent().getName());
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                setMouseOn(e);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                setMouseOff(e);
+            }
+        };
+        return _ml;
+    }
+    
+/**
+ * Sets cursor and font for component
+ * @param e MouseEvent
+ */    
+    private void setMouseOn(MouseEvent e)
+    {
+        e.getComponent().setFont(boldFont);
+        e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+    
+/**
+ * Sets cursor and font for component
+ * @param e MouseEvent
+ */    
+    private void setMouseOff(MouseEvent e)
+    {
+        e.getComponent().setFont(plainFont);
+        e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+    }  
+    
+    private void onClanClick(String clan)
+    {
+        this.fieldSearchText.setText(clan);
+        this.getSearchResult(clan);
+        
+        tabPane.setSelectedComponent(this.panelSearch);
+    }
+    
+/**
+ * Clears all data fields
+ */    
     private void clearFields()
     {
+        this.panelClans.removeAll();
         clearFamilyTab();
         clearParentsTab();
     }
     
+/**
+ * Clears family data
+ */    
     private void clearFamilyTab()
     {
         this.panelFamilies.removeAll();
     }
     
+/**
+ * Clears search data
+ */    
     private void clearSearchTab()
     {
         this.panelResults.removeAll();
     }
     
+/**
+ * Clears parents data
+ */    
     private void clearParentsTab()
     {
         String _empty = "empty.jpg";
@@ -451,24 +576,21 @@ public class mainForm extends JFrame
     }
     
 /**
- * Установка компонентов панели персональных данных
+ * Sets компонентов панели персональных данных
  */
     private void setPersonalPanel()
     {
         Font titleFont = new Font(boldFont.getName(), Font.BOLD, 16);
         
-        JLabel labelSurname = new JLabel(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Surname"));        
-
-        JLabel labelName = new JLabel(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("Name"));
-        
-        JLabel labelMiddleName = new JLabel(java.util.ResourceBundle.getBundle("genealogia/Bundle").getString("SecondName"));        
+        JLabel labelSurname = new JLabel(getBundle("genealogia/Bundle").getString("Surname"));
+        JLabel labelName = new JLabel(getBundle("genealogia/Bundle").getString("Name"));        
+        JLabel labelMiddleName = new JLabel(getBundle("genealogia/Bundle").getString("SecondName"));        
         
         this.fieldSurname.setFont(plainFont);
         
-        
-        int LABEL_X = 170;
-        int FIELD_X = LABEL_X + 110;
-        int LABEL_HEIGHT = 20;
+        final int LABEL_X = 170;
+        final int FIELD_X = LABEL_X + 110;
+        final int LABEL_HEIGHT = 20;
 //  Полное имя        
         this.labelFullName.setSize(450, LABEL_HEIGHT);
         this.labelFullName.setLocation(240, 5);
@@ -547,11 +669,19 @@ public class mainForm extends JFrame
         
         this.panelPersonal.add(labelDescription);
 
-        this.fieldDescription.setSize(500, 200);
+        this.fieldDescription.setSize(500, 100);
         this.fieldDescription.setLocation(20, labelDescription.getY() + 25);
         this.fieldDescription.setFont(plainFont);
         this.fieldDescription.setVerticalAlignment(SwingConstants.TOP);
-        this.panelPersonal.add(fieldDescription);    
+        //this.fieldDescription.setBorder(BorderFactory.createLineBorder(Color.black));
+        this.panelPersonal.add(fieldDescription);
+        
+//  List of clans
+        this.panelClans.setLocation(20, fieldDescription.getY() + fieldDescription.getHeight() + 5);
+        this.panelClans.setSize(500, 60);
+        this.panelClans.setFont(plainFont);
+        this.panelClans.setBorder(BorderFactory.createLineBorder(Color.black));
+        this.panelPersonal.add(this.panelClans);
         
         this.panelPersonal.repaint();    // перерисовываем        
     
@@ -589,7 +719,7 @@ public class mainForm extends JFrame
         labelMother.setSize(labelFather.getWidth(), 30);
         labelMother.setLocation(labelFather.getX(), 0);
         
-        MouseListener ml = this.getMouseListener();
+        MouseListener ml = this.getMouseListenerOnHuman();
         
         this.fieldFather.addMouseListener(ml);
         this.fieldMother.addMouseListener(ml);
@@ -759,9 +889,9 @@ public class mainForm extends JFrame
         }    
     }
     
- /**
- * Установка компонентов панели семей
- */    
+/**
+* Sets data of families on the family panel
+*/    
     private void setFamilyData()
     {
         ArrayList<String> childrenFromFamilies = new ArrayList<>();
@@ -816,7 +946,11 @@ public class mainForm extends JFrame
                 fieldSpouse.setText(spouse.getFullName());       //  полное имя супруга
                 fieldSpouse.setLocation(85, 15);
                 fieldSpouse.setFont(plainFont);
-
+                fieldSpouse.setName(spouse.getID());
+                
+                MouseListener ml = this.getMouseListenerOnHuman();
+                fieldSpouse.addMouseListener(ml);
+                
                 JLabel labelSpouse = new JLabel("Супруг(а):");
                 labelSpouse.setSize(100, height);
                 labelSpouse.setLocation(20, height);
@@ -849,7 +983,7 @@ public class mainForm extends JFrame
                         fieldChild.setFont(plainFont);
                         fieldChild.setName(fam.getChild(k));
 
-                        MouseListener ml = this.getMouseListener();
+                        //MouseListener ml = this.getMouseListenerOnHuman();
                         fieldChild.addMouseListener(ml);
 
                         Relative _child = new Relative();
@@ -898,6 +1032,12 @@ public class mainForm extends JFrame
         this.panelFamilies.repaint();    
     }
     
+/**
+ * 
+ * @param _panel
+ * @param _point
+ * @param humanID 
+ */    
     private void setHumanRow(JPanel _panel, Point _point, String humanID)
     {
         int height = 15;
@@ -910,7 +1050,7 @@ public class mainForm extends JFrame
         fieldHuman.setText(human.getFullName());
         fieldHuman.setName(human.getID()); 
         fieldHuman.setFont(plainFont);
-        MouseListener ml = this.getMouseListener();
+        MouseListener ml = this.getMouseListenerOnHuman();
         fieldHuman.addMouseListener(ml);        
         _panel.add(fieldHuman);
         //Дата рождения
@@ -931,7 +1071,7 @@ public class mainForm extends JFrame
     }
     
 /**
- * Установка панели поиска
+ * Sets search panel components
  */    
     private void setSearchPanel()
     {
@@ -943,111 +1083,27 @@ public class mainForm extends JFrame
         labelSearch.setLocation(100,5);  
         this.panelResults.setLocation(new Point(0, 0));
         
-//  Строка запроса        
-        final JTextField fieldSearchText = new JTextField("Ключевые слова", 20);
-        fieldSearchText.setSize(400, 20);
-        fieldSearchText.setLocation(100, 40);
-        
-        JButton buttonSearch = new JButton("Найти");
-        buttonSearch.setSize(80, 20);
-        buttonSearch.setLocation(520, 40);     
-
-        buttonSearch.addActionListener(new ActionListener() 
+        ActionListener al = new ActionListener() 
         {            
             @Override
             public void actionPerformed(ActionEvent e) 
             {
-                clearSearchTab();
-                Data result = new Data();
-                fieldSearchText.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-                Document doc = result.getSearchResult(fieldSearchText.getText());
-                if (doc != null) 
-                {
-                    NodeList nodelist;
-                    nodelist = doc.getChildNodes();
-                    Node root = nodelist.item(0); // получаем рутовый нод
-                    Node results = root.getChildNodes().item(0);   //получаем
-
-                    panelResults.setPreferredSize(new Dimension(600, results.getChildNodes().getLength()*30));
-                    System.out.println(results.getChildNodes().getLength()*30);
-                    //panelResults.setSize(new Dimension(600, 300));
-                    
-                    for (int i = 0; i < results.getChildNodes().getLength(); i++)
-                    {
-                        String id = results.getChildNodes().item(i).getTextContent();
-                        Relative tempHuman = new Relative();
-                        tempHuman.setRelative(id);
-                        
-                        JLabel name = new JLabel();
-                        name.setText(tempHuman.getFullName());
-                        name.setSize(new Dimension(300, 20));
-                        name.setLocation(new Point(10, i*25+10));
-                        name.setName(id);
-                        name.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                        name.setToolTipText(tempHuman.getDescription());
-                        
-                        MouseListener ml = new MouseInputListener() 
-                        {
-
-                            @Override
-                            public void mouseClicked(MouseEvent e) 
-                            {
-                                //Получаем кол-во щелчков
-                                int click = e.getClickCount();
-
-                                if (click == 1)
-                                {
-                                    onClick(e.getComponent());
-                                }
-                            }
-
-                            @Override
-                            public void mousePressed(MouseEvent e) {
-                         
-                            }
-
-                            @Override
-                            public void mouseReleased(MouseEvent e) {
-                         
-                            }
-
-                            @Override
-                            public void mouseEntered(MouseEvent e) {
-                         
-                            }
-
-                            @Override
-                            public void mouseExited(MouseEvent e) {
-                         
-                            }
-
-                            @Override
-                            public void mouseDragged(MouseEvent e) {
-                         
-                            }
-
-                            @Override
-                            public void mouseMoved(MouseEvent e) {
-                         
-                            }
-                        } ;
-                        
-                        name.addMouseListener(ml);
-                        
-                        JLabel dateBirth = new JLabel();
-                        dateBirth.setText(tempHuman.getFullName());
-                        dateBirth.setSize(new Dimension(100, 20));
-                        dateBirth.setLocation(new Point(name.getX() + name.getWidth() + 5, i*25+10));                       
-                        dateBirth.setText(Relative.displayDate(tempHuman.getBDate()));
-                        
-                        panelResults.add(name);
-                        panelResults.add(dateBirth);
-                    }                    
-                    panelResults.repaint();
-                }                
-                fieldSearchText.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                //clearSearchTab();
+                getSearchResult(fieldSearchText.getText());
             }
-        });  
+        };
+        
+    //  Строка запроса
+        fieldSearchText.setSize(400, 20);
+        fieldSearchText.setLocation(100, 40);
+        fieldSearchText.addActionListener(al);
+        
+    //Кнопка выполнения запроса
+        JButton buttonSearch = new JButton("Найти");
+        buttonSearch.setSize(80, 20);
+        buttonSearch.setLocation(520, 40);     
+ 
+        buttonSearch.addActionListener(al);
         
         this.panelSearch.add(labelSearch);
         this.panelSearch.add(fieldSearchText);
@@ -1068,12 +1124,106 @@ public class mainForm extends JFrame
     }
     
 /**
+ * Gets search result
+ */    
+    private void getSearchResult(String keywords)
+    {
+        clearSearchTab();
+        Data result = new Data();
+        this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        Document doc = result.getSearchResult(keywords);
+        if (doc != null) 
+        {
+            NodeList nodelist;
+            nodelist = doc.getChildNodes();
+            Node root = nodelist.item(0); // получаем рутовый нод
+            Node results = root.getChildNodes().item(0);   //получаем
+
+            panelResults.setPreferredSize(new Dimension(600, results.getChildNodes().getLength()*30));
+
+            for (int i = 0; i < results.getChildNodes().getLength(); i++)
+            {
+                String id = results.getChildNodes().item(i).getTextContent();
+                Relative tempHuman = new Relative();
+                tempHuman.setRelative(id);
+
+                JLabel name = new JLabel();
+                name.setText(tempHuman.getFullName());
+                name.setSize(new Dimension(300, 20));
+                name.setLocation(new Point(10, i*25+10));
+                name.setName(id);
+                name.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                name.setToolTipText(tempHuman.getDescription());
+
+                MouseListener ml = new MouseInputListener() 
+                {
+
+                    @Override
+                    public void mouseClicked(MouseEvent e) 
+                    {
+                        //Получаем кол-во щелчков
+                        int click = e.getClickCount();
+
+                        if (click == 2)
+                        {
+                            onClick(e.getComponent());
+                        }
+                    }
+
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+
+                    }
+
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+
+                    }
+
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+
+                    }
+
+                    @Override
+                    public void mouseDragged(MouseEvent e) {
+
+                    }
+
+                    @Override
+                    public void mouseMoved(MouseEvent e) {
+
+                    }
+                } ;
+
+                name.addMouseListener(ml);
+
+                JLabel dateBirth = new JLabel();
+                dateBirth.setText(tempHuman.getFullName());
+                dateBirth.setSize(new Dimension(100, 20));
+                dateBirth.setLocation(new Point(name.getX() + name.getWidth() + 5, i*25+10));                       
+                dateBirth.setText(Relative.displayDate(tempHuman.getBDate()));
+
+                panelResults.add(name);
+                panelResults.add(dateBirth);
+            }                    
+            panelResults.repaint();
+        }                
+        this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));    
+    }
+    
+/**
  * Создание главного меню
  */    
     private void setMenu()
     {
         JMenu fileMenu = new JMenu("File");
-        JMenuItem closeMenu = new JMenuItem("Close");
+        JMenuItem closeMenu = new JMenuItem(getBundle("genealogia/Bundle").getString("Close"));
         closeMenu.addActionListener(new ActionListener() 
         {           
             @Override
@@ -1084,7 +1234,7 @@ public class mainForm extends JFrame
         
         fileMenu.add(closeMenu);
         
-        JMenu settingsMenu = new JMenu("Settings");
+        JMenu settingsMenu = new JMenu(getBundle("genealogia/Bundle").getString("Settings"));
         ActionListener al = new ActionListener() 
         {
             @Override
@@ -1094,12 +1244,13 @@ public class mainForm extends JFrame
         };
         settingsMenu.addActionListener(al);
         
-        
+        JMenu helpMenu = new JMenu(getBundle("genealogia/Bundle").getString("Help"));
         
         JMenuBar mb = new JMenuBar();
         mb.add(fileMenu);
         mb.add(settingsMenu);
         mb.add(historyMenu);
+        mb.add(helpMenu);
         
         this.setJMenuBar(mb);    
     }
@@ -1146,9 +1297,9 @@ public class mainForm extends JFrame
         this.buttonForward.setEnabled(mode);
     }
     
-    /**
-     * Sets the history menu based on a history state
-     */
+/**
+ * Sets the history menu based on a history state
+ */
     private void setHistoryMenu()
     {
         if (this.historyMenu.getItemCount() > 0)
