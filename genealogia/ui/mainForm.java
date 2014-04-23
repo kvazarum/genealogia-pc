@@ -80,6 +80,9 @@ public class mainForm extends JFrame
     labelID fieldFatherBDate = new labelID();
     labelID fieldMotherBDate = new labelID();
     
+//  Label для вывода сообщений о результатах поиска    
+    JLabel labelSearchResult = new JLabel();
+    
     Font boldFont = new Font(fieldFatherBDate.getFont().getName(), Font.BOLD, fieldFatherBDate.getFont().getSize());
     Font plainFont  = new Font(fieldFatherBDate.getFont().getName(), Font.PLAIN, fieldFatherBDate.getFont().getSize());
 
@@ -151,9 +154,9 @@ public class mainForm extends JFrame
  */    
     public void setHuman(Relative hmn)
     {
-        clearFields();        
+        clearFields();
         this.human = hmn;
-       // setData();
+        setData();
     }
 
     public Relative getHuman() {
@@ -316,17 +319,17 @@ public class mainForm extends JFrame
         this.setSize(600, 450);
         
 //Заполнение данными человека        
-        if (getHuman() != null)
-        {
-            this.setData();
-        }
+//        if (getHuman() != null)
+//        {
+//            this.setData();
+//        }
     }
     
 /**
  * Функция заполнения формы данными выбранного человека
  */    
     private void setData()
-    {        
+    { 
         //  Полное имя 
         this.labelFullName.setText(this.human.getFullName());
         
@@ -384,7 +387,7 @@ public class mainForm extends JFrame
             this.panelClans.add(_labelClan);
             label_x += LABEL_WIDTH + 5;
         } 
-        this.panelClans.repaint(); System.out.println("кол-во " + _clans.size());
+        this.panelClans.repaint();
     }
    
 /**
@@ -455,12 +458,12 @@ public class mainForm extends JFrame
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                
+                setMouseOn(e);
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                
+                setMouseOff(e);
             }
         };
         return _ml;
@@ -1105,13 +1108,18 @@ public class mainForm extends JFrame
  
         buttonSearch.addActionListener(al);
         
+        labelSearchResult.setSize(250, 20);
+        labelSearchResult.setLocation(50, 75);
+        labelSearchResult.setFont(plainFont);
+        
+        this.panelSearch.add(labelSearchResult);
         this.panelSearch.add(labelSearch);
         this.panelSearch.add(fieldSearchText);
         this.panelSearch.add(buttonSearch);
 
         JScrollPane panelScrolable = new JScrollPane(this.panelResults);
         panelScrolable.setSize(new Dimension(600, 250));
-        panelScrolable.setLocation(new Point(50, 80));
+        panelScrolable.setLocation(new Point(50, 100));
         panelScrolable.setBorder(BorderFactory.createBevelBorder(1));
         panelScrolable.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         panelScrolable.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -1128,6 +1136,9 @@ public class mainForm extends JFrame
  */    
     private void getSearchResult(String keywords)
     {
+        final int LABEL_WIDTH = 300;
+        final int LABEL_HEIGHT = 20;
+        
         clearSearchTab();
         Data result = new Data();
         this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -1149,11 +1160,12 @@ public class mainForm extends JFrame
 
                 JLabel name = new JLabel();
                 name.setText(tempHuman.getFullName());
-                name.setSize(new Dimension(300, 20));
-                name.setLocation(new Point(10, i*25+10));
+                name.setSize(new Dimension(LABEL_WIDTH, LABEL_HEIGHT));
+                name.setLocation(new Point(10, i*LABEL_HEIGHT + 10));
                 name.setName(id);
                 name.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 name.setToolTipText(tempHuman.getDescription());
+                name.setFont(plainFont);
 
                 MouseListener ml = new MouseInputListener() 
                 {
@@ -1182,12 +1194,12 @@ public class mainForm extends JFrame
 
                     @Override
                     public void mouseEntered(MouseEvent e) {
-
+                        setMouseOn(e);
                     }
 
                     @Override
                     public void mouseExited(MouseEvent e) {
-
+                        setMouseOff(e);
                     }
 
                     @Override
@@ -1208,10 +1220,19 @@ public class mainForm extends JFrame
                 dateBirth.setSize(new Dimension(100, 20));
                 dateBirth.setLocation(new Point(name.getX() + name.getWidth() + 5, i*25+10));                       
                 dateBirth.setText(Relative.displayDate(tempHuman.getBDate()));
+                dateBirth.setFont(plainFont);
 
                 panelResults.add(name);
                 panelResults.add(dateBirth);
-            }                    
+            } 
+            if (results.getChildNodes().getLength() == 0)
+            {
+                labelSearchResult.setText("Нет данных соответствующих запросу");
+            }
+            else
+            {
+                labelSearchResult.setText("Количество совпадений - " + results.getChildNodes().getLength());            
+            }
             panelResults.repaint();
         }                
         this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));    
