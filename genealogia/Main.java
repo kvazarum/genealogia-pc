@@ -47,7 +47,7 @@ public class Main {
  */
     private static void showMainForm()
     {
-        mainForm form = new mainForm();
+        mainForm form = new mainForm(); 
         form.init();
         Settings settings = setSettings();
         String id = settings.getDefaultHuman();
@@ -66,7 +66,6 @@ public class Main {
             form.setHuman(id);
             form.history.addToHistoryList(form.getRelative());
         }
-
         form.setForm();
         form.pack();
         form.setSize(800, 600);
