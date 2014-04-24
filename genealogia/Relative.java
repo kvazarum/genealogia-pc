@@ -9,6 +9,7 @@ package genealogia;
 import genealogia.enums.Gender;
 import abstracts.Human;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -19,7 +20,7 @@ import org.w3c.dom.NodeList;
  */
 public class Relative extends Human{
 
-    private String id="0";  // номер в системе    
+    private String id;  // номер в системе    
     
     private String surnames = ""; // фамилии, полученные после рождения
     
@@ -32,8 +33,16 @@ public class Relative extends Human{
 //  Массив семей    
     private ArrayList<String> fams = new ArrayList<String>();
     
+    public Relative(){
+    }    
+    
+    public Relative(String id)
+    {
+        setRelative(id);
+    }
+    
 /**
- * Возвращает список номеров семей
+ * Возвращает список id семей
  * @return 
  */    
     public ArrayList<String> getFamilies()
@@ -47,15 +56,15 @@ public class Relative extends Human{
  */    
     public String getPathToAvatar()
     {
-        String path = Settings.getPath() + "pics/" + this.getAvatar();
+        String path = Settings.getPATH()+ "pics/" + this.getAvatar();
         return path;
     }
     
 /**
- * 
+ * Возвращает количество семей
  * @return количество семей
  */   
-    public int getSizeFams()
+    public int getFamsCount()
     {
         return this.fams.size();
     }
@@ -73,9 +82,7 @@ public class Relative extends Human{
  * @param id уникальный идентификатор человека
  */    
     public void setID(String id){
-        if (id.compareTo(id) != 0){
-            this.id = id;   
-        }
+        this.id = id;
     } 
 
 /**
@@ -198,74 +205,75 @@ public class Relative extends Human{
  */    
     public boolean setRelative(String id)
     {            
+        setID(id);
+        
         boolean result = false;
-        
         Data data = new Data();
-
         Document doc = data.getHumanData(id);
-        
         NodeList nodelist;
         
         if (doc != null) 
-        {
-            
-            this.setID(id);
-            
+        {            
             nodelist = doc.getChildNodes();
-
             Node root = nodelist.item(0); // получаем рутовый нод
-
             Node human = root.getChildNodes().item(0);   //получаем нод человека
             
             for (int i = 0; i < human.getChildNodes().getLength(); i++)
             {
                 
                 String nodeName = human.getChildNodes().item(i).getNodeName();
+                String value = human.getChildNodes().item(i).getTextContent();
                 
                 if (nodeName.compareTo("rod") == 0) 
                 {
-                    this.setRod(human.getChildNodes().item(i).getTextContent());
+                    this.setRod(value);
+                    continue;
                 }
                 
                 if (nodeName.compareTo("firstName") == 0) {
-                    this.setName(human.getChildNodes().item(i).getTextContent());
+                    this.setName(value);
+                    continue;
                 }
 
                 if (nodeName.compareTo("middleName") == 0) {
-                    this.setMiddleName(human.getChildNodes().item(i).getTextContent());
+                    this.setMiddleName(value);
+                    continue;
                 }
 
                 if (nodeName.compareTo("surname") == 0) {
-                    this.setSurname(human.getChildNodes().item(i).getTextContent());
+                    this.setSurname(value);
+                    continue;
                 }
 
                 if (nodeName.equals("fatherID")) 
                 {
-                    if (!human.getChildNodes().item(i).getTextContent().equals("0"))
+                    if (!value.equals("0"))
                     {
-                        this.setFather(human.getChildNodes().item(i).getTextContent());
+                        this.setFather(value);
                     } 
                     else
                     {
                         this.setFather("-1");
                     }
+                    continue;
                 }
 
                 if (nodeName.equals("motherID"))
                 {
-                    if (!human.getChildNodes().item(i).getTextContent().equals("0")) 
+                    if (!value.equals("0")) 
                     {
-                        this.setMother(human.getChildNodes().item(i).getTextContent());
+                        this.setMother(value);
                     }
                     else
                     {
                         this.setMother("-1");
                     }
+                    continue;
                 }
 
-                if (nodeName.compareTo("sex") == 0)
+                if (nodeName.compareTo("gender") == 0)
                 {
-                    if (human.getChildNodes().item(i).getTextContent().equals("1")) 
+                    if (value.equals("1")) 
                     {
                         this.setGender(Gender.Female);
                     } 
@@ -273,40 +281,48 @@ public class Relative extends Human{
                     {
                         this.setGender(Gender.Male);
                     }
+                    continue;
                 }
                 
                 if (nodeName.compareTo("second_sname") == 0) {
-                    this.setSurnames(human.getChildNodes().item(i).getTextContent());
+                    this.setSurnames(value);
+                    continue;
                 }                
 
                 if (nodeName.compareTo("description") == 0) 
                 {
-                    this.setDescription(human.getChildNodes().item(i).getTextContent());
+                    this.setDescription(value);
+                    continue;
                 }
 
                 if (nodeName.compareTo("img") == 0)
                 {
-                    this.setAvatar(human.getChildNodes().item(i).getTextContent());
+                    this.setAvatar(value);
+                    continue;
                 }
                 
                 if (nodeName.compareTo("bdate") == 0)
                 {
-                    this.setBDate(human.getChildNodes().item(i).getTextContent());
+                    this.setBDate(value);
+                    continue;
                 }   
                 
                 if (nodeName.compareTo("ddate") == 0)
                 {
-                    this.setDDate(human.getChildNodes().item(i).getTextContent());
+                    this.setDDate(value);
+                    continue;
                 }                 
                 
                 if (nodeName.compareTo("bplace") == 0)
                 {
-                    this.setBPlace(human.getChildNodes().item(i).getTextContent());
+                    this.setBPlace(value);
+                    continue;
                 }    
                 
                 if (nodeName.compareTo("family") == 0)
                 {
-                    this.fams.add(human.getChildNodes().item(i).getTextContent());                    
+                    this.fams.add(value);
+                    continue;
                 }                 
             }
             result = true;
@@ -348,6 +364,56 @@ public class Relative extends Human{
             result += " " + bdt[2] + "г.";
         }        
         return result;
+    }
+    
+    public ArrayList<String> getChildrenWhithoutFamily()
+    {
+        ArrayList<String> _childrenWhithoutFamily = new ArrayList<>();
+        Data data = new Data();
+
+        Document doc = data.getChildrenWithoutFamily(this.getID());
+        
+        NodeList nodelist;
+        
+        if (doc != null) 
+        {            
+            nodelist = doc.getChildNodes();
+
+            Node root = nodelist.item(0); // получаем рутовый нод
+
+            Node children = root.getChildNodes().item(0);   //получаем нод человека
+            
+            for (int i = 0; i < children.getChildNodes().getLength(); i++)
+            {
+                
+                String nodeName = children.getChildNodes().item(i).getNodeName();
+                _childrenWhithoutFamily.add(children.getChildNodes().item(i).getTextContent());
+            }
+        }
+        return _childrenWhithoutFamily;
+    }
+    
+    public ArrayList<String> getClans()
+    {
+        ArrayList<String> _clans = new ArrayList<>();
+        Data data = new Data();
+        Document doc = data.getClans(this.getID());        
+        NodeList nodelist;
+        
+        if (doc != null) 
+        {            
+            nodelist = doc.getChildNodes();
+
+            Node root = nodelist.item(0); // получаем рутовый нод
+
+            Node _list = root.getChildNodes().item(0);   //получаем нод человека
+            
+            for (int i = 0; i < _list.getChildNodes().getLength(); i++)
+            {
+                _clans.add(_list.getChildNodes().item(i).getTextContent());
+            }
+        }        
+        return _clans;
     }
     
 }
