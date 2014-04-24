@@ -9,7 +9,7 @@ package genealogia;
 import genealogia.enums.Gender;
 import abstracts.Human;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import static java.util.ResourceBundle.getBundle;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -31,9 +31,10 @@ public class Relative extends Human{
     private String avatar;
 
 //  Массив семей    
-    private ArrayList<String> fams = new ArrayList<String>();
+    private ArrayList<String> fams;
     
     public Relative(){
+        fams = new ArrayList<String>();
     }    
     
     public Relative(String id)
@@ -148,47 +149,6 @@ public class Relative extends Human{
     }
     
 /**
- * 
- * @return текстовую информация о человеке
- */    
-    public String showInfo(){
-        String result, isUser;
-        
-        result = "Род: " + this.getRod()+ "\n";
-        result = result + "Имя: " + this.getName() + "\n";
-        result = result + "Отчество: " + this.getMiddleName() + "\n";
-        result = result + "Фамилия: " + this.getSurname() + "\n";
-
-        result = result + "\nРодители\n";
-        if (this.getFather().compareTo("-1") != 0)
-        {
-            Relative father = new Relative();
-            father.setRelative(this.getFather());
-            result = result + "Отец: " + father.getSurname() + " " + father.getName() + " " + father.getMiddleName() + "\n";
-        }
-        if (this.getMother().compareTo("-1") != 0)
-        {
-            Relative mother = new Relative();
-            mother.setRelative(this.getMother());
-            result = result + "Мать: " + mother.getSurname() + " " + mother.getName() + " " + mother.getMiddleName() + "\n";
-        }
-        result = result + "\n";
-        if (!this.getDescription().isEmpty())
-            result = result + "Примечания: " + this.getDescription() + "\n";
-        
-        if (this.isUser()){
-            isUser = "Уже пользователь";
-        }
-        else{
-            isUser = "Пока ещё не пользователь.";
-        }
-        result = result + "\nЯвляется пользователем системы: " + isUser + "\n";
-        
-
-        return result;
-    }
-    
-/**
  * Функция определения, зарегистрирован ли этот человек как пользователь системы
  * @return  <code>true</code> если да, 
  *          <code>false</code> если нет
@@ -206,7 +166,7 @@ public class Relative extends Human{
     public boolean setRelative(String id)
     {            
         setID(id);
-        
+        fams = new ArrayList<String>();
         boolean result = false;
         Data data = new Data();
         Document doc = data.getHumanData(id);
@@ -218,7 +178,8 @@ public class Relative extends Human{
             Node root = nodelist.item(0); // получаем рутовый нод
             Node human = root.getChildNodes().item(0);   //получаем нод человека
             
-            for (int i = 0; i < human.getChildNodes().getLength(); i++)
+            int count = human.getChildNodes().getLength();
+            for (int i = 0; i < count; i++)
             {
                 
                 String nodeName = human.getChildNodes().item(i).getNodeName();
@@ -337,7 +298,7 @@ public class Relative extends Human{
  */
     public static String displayDate(String param)
     {
-        String result = "Нет данных";
+        String result = getBundle("genealogia/Bundle").getString("nodata");
         String[] bdt = param.split("-");
         if (bdt[2].compareTo("0000") != 0) 
         {
@@ -383,10 +344,9 @@ public class Relative extends Human{
 
             Node children = root.getChildNodes().item(0);   //получаем нод человека
             
-            for (int i = 0; i < children.getChildNodes().getLength(); i++)
+            int count = children.getChildNodes().getLength();
+            for (int i = 0; i < count; i++)
             {
-                
-                String nodeName = children.getChildNodes().item(i).getNodeName();
                 _childrenWhithoutFamily.add(children.getChildNodes().item(i).getTextContent());
             }
         }
@@ -408,7 +368,8 @@ public class Relative extends Human{
 
             Node _list = root.getChildNodes().item(0);   //получаем нод человека
             
-            for (int i = 0; i < _list.getChildNodes().getLength(); i++)
+            int count = _list.getChildNodes().getLength();
+            for (int i = 0; i < count; i++)
             {
                 _clans.add(_list.getChildNodes().item(i).getTextContent());
             }
