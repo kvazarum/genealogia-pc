@@ -44,7 +44,7 @@ import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
-import javax.swing.event.MouseInputListener;
+import javax.swing.border.EtchedBorder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -55,8 +55,7 @@ import org.w3c.dom.NodeList;
  */
 public class MainForm extends JFrame
 {
-    Relative human;
-    
+    Relative human;    
     JLabel fieldSurname;
     JLabel fieldName;
     JLabel fieldMName; 
@@ -108,8 +107,11 @@ public class MainForm extends JFrame
 //  Панель родителей    
     JPanel panelParents;
     
-//  Cписок родов
+//  Панель cписка родов
     JPanel panelClans;
+    
+    //JPanel panelVisualLinks;
+    VisualPanel panelVisualLinks;
     
 //  Панель закладок    
     JTabbedPane tabPane;    
@@ -178,21 +180,25 @@ public class MainForm extends JFrame
         panelMother = new JPanel(null); 
         panelParents = new JPanel(null);
         panelClans = new JPanel(null);
+        panelVisualLinks = new VisualPanel(null);
         buttonBack = new JButton();
         buttonForward = new JButton();
         fieldSearchText = new JTextField("", 20);
         panelDescription = new JScrollPane();
-    }
-    
+    }    
     
 /**
  * Установка id человека, данные которого отображает форма
  * @param id - идентификатор человека
  */    
     public void setHuman(String id){
-        Relative hmn = new Relative(id);      
-        this.setHuman(hmn);
+        Relative hmn = new Relative(id);
+        this.setData(hmn);
     }
+    
+    public void setHuman(Relative human){   
+        this.human = human;
+    }    
     
     public Relative getRelative()
     {
@@ -203,11 +209,11 @@ public class MainForm extends JFrame
  * 
  * @param hmn 
  */    
-    public void setHuman(Relative hmn)
+    public void setData(Relative hmn)
     {
         clearFields();
-        this.human = hmn;
-        setData();
+        this.setHuman(hmn);
+        MainForm.this.setData();
     }
 
     public Relative getHuman() {
@@ -219,6 +225,11 @@ public class MainForm extends JFrame
  */    
     public void setHistoryButtons()
     {
+        String imageName = "images/back.png";
+        URL imgURL = MainForm.class.getResource(imageName);
+        ImageIcon ii = new ImageIcon(imgURL);
+        
+        this.buttonBack.setIcon(new ImageIcon(ii.getImage().getScaledInstance(-25, 25, ii.getImage().SCALE_SMOOTH)));
         if (this.history.getSize() > 1)
         {
             if (this.history.getPosition() == 0)
@@ -259,7 +270,7 @@ public class MainForm extends JFrame
             humanInHistory = history.get(currentPosition + 1);
         }
         
-        setHuman(humanInHistory);
+        setData(humanInHistory);
         history.changePosition(direction);        
         setHistoryButtons();        
     }
@@ -273,9 +284,9 @@ public class MainForm extends JFrame
         if (index >= 0 && index <= this.history.getSize() - 1)
         {          
             clearFields();
-            setHuman(this.history.get(index));
+            setData(this.history.get(index));
             this.history.changePosition(index);
-            setData();
+            MainForm.this.setData();
             this.setHistoryButtons();           
         }
     }    
@@ -297,10 +308,10 @@ public class MainForm extends JFrame
     private void setToolBar()
     {
         final int TOOLBAR_WIDTH = 450;
-        final int TOOLBAR_HEIGHT = 20;
+        final int TOOLBAR_HEIGHT = 30;
         
-        final int BUTTON_WIDTH = 100;
-        final int BUTTON_HEIGHT = 20;
+        final int BUTTON_WIDTH = 30;
+        final int BUTTON_HEIGHT = 30;
         
         JToolBar jtb = new JToolBar("my toolbar");
         jtb.setFloatable(true);
@@ -308,7 +319,7 @@ public class MainForm extends JFrame
         this.getContentPane().add(jtb, BorderLayout.NORTH);
         
         buttonBack.setText("<<");
-        buttonBack.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        //buttonBack.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
         buttonBack.setSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         buttonBack.setVerticalTextPosition(AbstractButton.CENTER);
         buttonBack.setHorizontalTextPosition(AbstractButton.LEADING);
@@ -365,15 +376,17 @@ public class MainForm extends JFrame
 //  Панель родов человека        
         setClansPanel();
         
-//  Панель поиска
+        //this.panelVisualLinks.setSize(600, 450);
+        
         tabPane.addTab(getBundle("genealogia/Bundle").getString("PrivateData"), panelPersonal);
         tabPane.addTab(getBundle("genealogia/Bundle").getString("Parents"), panelParents);
         tabPane.addTab("Семьи и дети", this.panelFamilies);
+        tabPane.addTab(getBundle("genealogia/Bundle").getString("VisualLinks"), this.panelVisualLinks);
         tabPane.addTab(getBundle("genealogia/Bundle").getString("Search"), this.panelSearch);
         this.add(tabPane);
         
         this.pack();       
-        this.setSize(600, 450);
+        this.setSize(1000, 450);
     }
     
 /**
@@ -403,6 +416,9 @@ public class MainForm extends JFrame
         setClans();
         
         setParentsData();
+
+        //  Панель визуальных связей        
+        setVisualPanel();
         
 //  Семьи
         this.setFamilyData();        
@@ -510,6 +526,23 @@ public class MainForm extends JFrame
             @Override
             public void mouseEntered(MouseEvent e) {
                 setMouseOn(e);
+//                if (e.getSource().getClass().toString().indexOf("JPanel") != -1)
+//                {
+//                    String currentID = e.getComponent().getName();
+//                    Component[] components = panelVisualLinks.getComponents();
+//                    for(int i = 0; i < components.length; i++)
+//                    {
+//                        String id = ((JPanel)components[i]).getName();
+//                        if (id != null)
+//                        {
+//                            Relative human = new Relative(id);
+//                            if (human.getFather().equals(currentID) || human.getMother().equals(currentID))
+//                            {
+//                                components[i].setSize(components[i].getWidth() + 2, components[i].getHeight() + 2);
+//                            }
+//                        }
+//                    }
+//                }
             }
 
             @Override
@@ -569,7 +602,6 @@ public class MainForm extends JFrame
  */    
     private void setMouseOn(MouseEvent e)
     {
-        e.getComponent().setFont(boldFont);
         e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
     
@@ -579,7 +611,6 @@ public class MainForm extends JFrame
  */    
     private void setMouseOff(MouseEvent e)
     {
-        e.getComponent().setFont(plainFont);
         e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
     }  
     
@@ -635,6 +666,270 @@ public class MainForm extends JFrame
         this.panelClans.setSize(500, 60);
         this.panelClans.setFont(plainFont);
         this.panelClans.setBorder(BorderFactory.createEtchedBorder());
+    }
+    
+/**
+ * Sets tab with visual links with children, spouses, parents
+ */    
+    private void setVisualPanel()
+    {        
+        panelVisualLinks.setHuman(this.getHuman());
+        panelVisualLinks.setSize(new Dimension(800, 500));
+        panelVisualLinks.removeAll();
+        int x = VisualPanel.PANEL_WIDTH/2 - VisualPanel.COMPONENT_WIDTH/2;
+        int y = VisualPanel.PANEL_HEIGHT/2 - VisualPanel.COMPONENT_HEIGHT;
+        //Draw main human
+        JPanel _panel = getVisualPanel(this.human, Color.RED);
+        _panel.setLocation(x, y);
+        panelVisualLinks.add(_panel);
+        
+        if (!this.human.getFather().equals("-1") || !this.human.getMother().equals("-1"))
+        {
+            drawParents(x, y);      //Draw parents
+        }
+        
+        if (this.human.getFamsCount() > 0 || !this.human.getChildrenWhithoutFamily().isEmpty())
+        {
+            drawFamilies(x, y); //Draw families
+        }
+        panelVisualLinks.repaint();
+    }
+    
+/**
+ * Draws spouses and children from families
+ * @param x coordinate of main rectangle
+ * @param y coordinate of main rectangle
+ */    
+    private void drawFamilies(int x, int y)
+    {
+        int count = this.human.getFamsCount();
+        int left_x = x;     //last x for left spouse
+        int right_x = x;    //last x for right spouse
+        
+        ArrayList<String> fams = this.human.getFamilies();
+        
+        int last_x = 30;
+        int last_y = y + VisualPanel.COMPONENT_HEIGHT + VisualPanel.SPACE_BETWEEN_RAW;
+        Point lastPoint = new Point(last_x, last_y);
+        
+        for (int i = 0; i < count; i++)
+        {
+            Family family = new Family();
+            family.setFamily(fams.get(i));
+            Relative spouse = new Relative(); //spouse
+            
+            if (this.human.getGender() == Gender.Male)
+            { 
+                spouse.setRelative(family.getMother());
+            }
+            else
+            {
+                spouse.setRelative(family.getFather());
+            }
+            
+            Color _tempColor;
+            if (i < VisualPanel.colors.length)
+            {
+                _tempColor = VisualPanel.colors[i];
+            }
+            else
+            {
+                _tempColor = Color.BLACK;
+            }
+            
+            JPanel panel = getVisualPanel(spouse, _tempColor);
+            
+            if (i == 0 || (i%2 == 0))
+            {
+                left_x = left_x - panel.getWidth() - VisualPanel.SPACE_BETWEEN_CELLS;
+                panel.setLocation(left_x, y);
+            }
+            else
+            {
+                right_x = right_x + panel.getWidth() + panel.getWidth()*(i-1) + VisualPanel.SPACE_BETWEEN_CELLS;
+                panel.setLocation(right_x, y);
+            }
+            
+            if (family.getCountChildren() > 0)
+            {
+                lastPoint = drawChildrenFromFamily(family, lastPoint, VisualPanel.colors[i]);
+            }
+            panelVisualLinks.add(panel);
+            
+        }
+        if (!this.human.getChildrenWhithoutFamily().isEmpty())
+        {
+            drawChildrenWhithoutFamily(lastPoint);
+        }        
+    }
+    
+    private void drawChildrenWhithoutFamily(Point point )    
+    {
+        int last_x = (int)point.getX();
+        int last_y = (int)point.getY();
+        
+        //int childrenLevel = 1;
+        final int increment = VisualPanel.COMPONENT_HEIGHT + VisualPanel.SPACE_BETWEEN_RAW;        
+        
+        ArrayList<String> children = this.human.getChildrenWhithoutFamily();
+        for (String childID: children)
+        {
+            Relative child = new Relative();
+            child.setRelative(childID);
+            JPanel panel = getVisualPanel(child, Color.BLUE);
+            panel.setLocation(last_x, last_y);
+            this.panelVisualLinks.add(panel);
+            int nextPoint = last_x + VisualPanel.COMPONENT_WIDTH + VisualPanel.SPACE_BETWEEN_CELLS + VisualPanel.COMPONENT_WIDTH;
+            if (nextPoint < VisualPanel.PANEL_WIDTH)
+            {
+                last_x += VisualPanel.COMPONENT_WIDTH + VisualPanel.SPACE_BETWEEN_CELLS;
+            }
+            else
+            {
+               last_x = (int)point.getX();
+               last_y += increment;
+               //childrenLevel++;
+            }
+        }  
+    }
+    
+    private Point drawChildrenFromFamily(Family family, Point point, Color color)
+    {
+        int last_x = (int)point.getX();
+        int last_y = (int)point.getY();
+        Point lastpoint = point;
+        
+        for (String childID: family.getChildren())
+        {
+            Relative child = new Relative();
+            child.setRelative(childID);
+            JPanel panel = getVisualPanel(child, color);
+            panel.setLocation(last_x, last_y);
+            this.panelVisualLinks.add(panel);
+            int nextPoint = last_x + VisualPanel.COMPONENT_WIDTH + VisualPanel.SPACE_BETWEEN_CELLS + VisualPanel.COMPONENT_WIDTH;
+            if (nextPoint < VisualPanel.PANEL_WIDTH)
+            {
+                last_x += VisualPanel.COMPONENT_WIDTH + VisualPanel.SPACE_BETWEEN_CELLS;
+            }
+            else
+            {
+               last_x = (int)point.getX();
+               last_y += VisualPanel.COMPONENT_HEIGHT + VisualPanel.SPACE_BETWEEN_CELLS;
+            }
+        }
+        lastpoint = new Point(last_x, last_y);
+        return lastpoint;
+    }
+    
+/**
+ * Draws parents
+ * @param x coordinate of main rectangle
+ * @param y coordinate of main rectangle
+ */    
+    private void drawParents(int x, int y)
+    {
+        Relative _relative = new Relative();
+        JPanel panel;
+        int x_parent;
+        int y_parent;
+
+        if (!this.human.getFather().equals("-1"))
+        {
+            _relative.setRelative(human.getFather());
+            panel = getVisualPanel(_relative, Color.CYAN);
+            x_parent = x - VisualPanel.COMPONENT_WIDTH/3 - 30;
+            y_parent = y - VisualPanel.COMPONENT_HEIGHT - VisualPanel.SPACE_BETWEEN_RAW;
+            addParentPanel(panel, x_parent, y_parent);
+        }
+        if (!this.human.getMother().equals("-1"))
+        {
+            _relative.setRelative(human.getMother());
+            panel = getVisualPanel(_relative, Color.CYAN);
+            x_parent = x + VisualPanel.COMPONENT_WIDTH/3 + 30;
+            y_parent = y - VisualPanel.COMPONENT_HEIGHT - VisualPanel.SPACE_BETWEEN_RAW;
+            addParentPanel(panel, x_parent, y_parent);
+        }
+    }
+    
+    
+    private void addParentPanel(JPanel panel, int x, int y)
+    {
+        panel.setLocation(x, y);
+        panelVisualLinks.add(panel);        
+    }
+    
+/**
+ * Gets panel with data of human
+ * @param human
+ * @return JPanel
+ */    
+    private JPanel getVisualPanel(Relative human, Color borderColor)
+    {
+        int PANEL_WIDTH = 120;
+        int PANEL_HEIGHT = 70;
+        int BORDER_WIDTH = 2;
+        int LABEL_HEIGHT = 10;
+        
+        JPanel _panel = new JPanel();
+        int width;
+        if (this.human == human)
+        {
+            width = 4;
+        }
+        else
+        {
+            width = 2;
+        }
+        _panel.setBorder(BorderFactory.createLineBorder(borderColor, width));
+        _panel.setSize(PANEL_WIDTH, PANEL_HEIGHT);
+        _panel.setBackground(Color.LIGHT_GRAY);
+        _panel.setOpaque(true);
+        
+        JLabel _surname = new JLabel();
+        String temp = human.getSurname();
+        if (human.getSurnames().length() > 0)
+        {
+            temp += "(" + human.getSurnames() + ")";
+        }
+        _surname.setText(temp);
+        _surname.setLocation(0, 0);
+        _surname.setFont(boldFont.deriveFont((float) 8));
+        _surname.setPreferredSize(new Dimension(PANEL_WIDTH - 2*BORDER_WIDTH, LABEL_HEIGHT));
+        _surname.setVerticalAlignment(SwingConstants.TOP);
+        _surname.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        JLabel _name = new JLabel();
+        _name.setText(human.getName() + " " + human.getMiddleName());
+        _name.setFont(boldFont.deriveFont((float) 8));
+        _name.setPreferredSize(new Dimension(PANEL_WIDTH - 2*BORDER_WIDTH, LABEL_HEIGHT));
+        _name.setLocation(0, LABEL_HEIGHT);
+        _name.setVerticalAlignment(SwingConstants.TOP);
+        _name.setHorizontalAlignment(0);
+                
+        _panel.add(_surname);
+        _panel.add(_name);
+        if (human.getDescription().length() > 0)
+        {
+            _panel.setToolTipText("<html>" + human.getDescription());
+        }
+        
+        MouseListener ml = getMouseListenerOnHuman();
+        if (human != this.human)
+        {
+            _panel.addMouseListener(ml);
+            _panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            _panel.setName(human.getID());
+        }        
+        
+        AvatarLabel avatar = new AvatarLabel();
+        avatar.setSize(avatarSize);
+        avatar.setLocation((int) (PANEL_WIDTH/2 - avatarSize.getWidth()/2), PANEL_HEIGHT - LABEL_HEIGHT*2);
+        if (avatar.setAvatar(human.getPathToAvatar()))
+        {
+            _panel.add(avatar);
+        }        
+        
+        return _panel;
     }
     
 /**
@@ -763,18 +1058,17 @@ public class MainForm extends JFrame
  */    
     private void setParentPanel()
     {
-//  Панель с данными отца
         panelParents.setSize(600, 400);
-        panelParents.setLocation(0,0);        
+        panelParents.setLocation(0,0);  
+//  Панель с данными отца        
         panelFather.setSize(550, 80);
         panelFather.setLocation(20, 5);
-        panelFather.setBorder(BorderFactory.createEtchedBorder());
-                
+        panelFather.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
 
 //  Панель с данными матери        
         panelMother.setSize(550, panelFather.getHeight());
         panelMother.setLocation(panelFather.getX(), panelFather.getY() + panelFather.getHeight() + 5);
-        panelMother.setBorder(BorderFactory.createEtchedBorder()); 
+        panelMother.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
         
 //  Добавляем панель с данными отца        
         panelParents.add(panelFather);
@@ -874,7 +1168,7 @@ public class MainForm extends JFrame
         {
             _parent.setRelative(human.getFather());
             fatherName = _parent.getFullName();
-            this.fieldFather.setToolTipText(_parent.getDescription());
+            this.fieldFather.setToolTipText("<html>" + _parent.getDescription());
             fatherID = human.getFather();
         }
 
@@ -882,7 +1176,7 @@ public class MainForm extends JFrame
         {
             _parent.setRelative(human.getMother());
             motherName = _parent.getFullName();
-            this.fieldMother.setToolTipText(_parent.getDescription());
+            this.fieldMother.setToolTipText("<html>" + _parent.getDescription());
             motherID = human.getMother();            
         }
         
@@ -980,7 +1274,7 @@ public class MainForm extends JFrame
         int lastY = 0;  //  Последнее значение Y панели семьи
         int lastHeight = 0; // Последнее значение высоты панели семьи        
         int PANEL_WIDTH = 500; //   ширина панели
-        int PANEL_HEIGHT = 70;  //  начальная высота панели
+        int PANEL_HEIGHT = 100;  //  начальная высота панели
         
         if (this.human.getFamsCount() > 0) // если имеются семьи
         {
@@ -991,11 +1285,6 @@ public class MainForm extends JFrame
             for (int i=0; i < this.human.getFamsCount(); i++)
             {
                 int height = 15;
-                
-                JLabel fieldSpouse = new JLabel();
-                fieldSpouse.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));                
-
-                fieldSpouse.setSize(290, 15);                
 
                 Family fam = new Family();
                 fam.setFamily(listF.get(i));
@@ -1003,87 +1292,56 @@ public class MainForm extends JFrame
                 JPanel familyPanel = new JPanel(null);
                 Border border = BorderFactory.createTitledBorder("Семья");
                 familyPanel.setBorder(border);
-                familyPanel.setSize(PANEL_WIDTH, PANEL_HEIGHT + fam.getCountChildren()*30);
+                familyPanel.setSize(PANEL_WIDTH, PANEL_HEIGHT + fam.getCountChildren()*35);
 
                 int x = 10;
                 int y = lastY + lastHeight + 5;
-                familyPanel.setLocation(x, y);
-                lastHeight = 70 + fam.getCountChildren()*30;
+                lastHeight = familyPanel.getHeight();
                 lastY = familyPanel.getY();
 
-                String param;                                   // id супруга
+                familyPanel.setLocation(x, y);
+                String spouseID;                                // id супруга
                 if (this.human.getGender() == Gender.Male)
                 {
-                    param = fam.getMother();
+                    spouseID = fam.getMother();
                 }
                 else
                 {
-                    param = fam.getFather();
+                    spouseID = fam.getFather();
                 }
 
-                Relative spouse = new Relative();               // супруг                  
-                spouse.setRelative(param);
-
-                fieldSpouse.setText(spouse.getFullName());       //  полное имя супруга
-                fieldSpouse.setLocation(85, 15);
-                fieldSpouse.setFont(plainFont);
-                fieldSpouse.setName(spouse.getID());
+                Relative spouse = new Relative(spouseID);       // spouse
                 
                 MouseListener ml = this.getMouseListenerOnHuman();
-                fieldSpouse.addMouseListener(ml);
                 
-                JLabel labelSpouse = new JLabel("Супруг(а):");
-                labelSpouse.setSize(100, height);
-                labelSpouse.setLocation(20, height);
+                JLabel _spouseTitle = new JLabel("Супруг(а):");
+                _spouseTitle.setSize(100, height);
+                _spouseTitle.setLocation(20, height);
 
-                familyPanel.add(labelSpouse);
-                familyPanel.add(fieldSpouse);     
+                JPanel spousePanel = getHumanRow(spouse);
+                spousePanel.setLocation(20, _spouseTitle.getY() + _spouseTitle.getHeight() + 5);
+                spousePanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                
+                familyPanel.add(_spouseTitle);
+                familyPanel.add(spousePanel);
                 
 //  если в семье есть дети
                 if (fam.getCountChildren() > 0)
                 {
-                    JLabel labelChildren = new JLabel(getBundle("genealogia/Bundle").getString("children"));
-                    labelChildren.setSize(40, 20);
-                    labelChildren.setLocation(labelSpouse.getX(), labelChildren.getY() + labelChildren.getHeight() + 10);
-                    familyPanel.add(labelChildren);
+                    JLabel titleChildren = new JLabel(getBundle("genealogia/Bundle").getString("children") + ":");
+                    titleChildren.setSize(40, 20);
+                    titleChildren.setLocation(_spouseTitle.getX(), spousePanel.getY() + spousePanel.getHeight() + 10);
+                    familyPanel.add(titleChildren);
 
                     for (int k=0; k < fam.getCountChildren(); k++)
                     {
-//                        setHumanRow(familyPanel, new Point(x, y + 50), fam.getChild(k));
-//                        y += height + 17;
-                        JLabel fieldChild = new JLabel();
-                        fieldChild.setSize(300, height);
-                        fieldChild.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                        
-                        JLabel fieldBDate = new JLabel();                        
-                        fieldBDate.setSize(120, height);
-                        fieldBDate.setFont(plainFont);                            
+                        Relative _child = new Relative(fam.getChild(k));
+                        JPanel _panel = getHumanRow(_child);
                         x = 20;
-                        y = labelChildren.getY() + labelChildren.getHeight() + k*31;
-                        fieldChild.setLocation(x, y);
-                        fieldChild.setFont(plainFont);
-                        fieldChild.setName(fam.getChild(k));
-
-                        //MouseListener ml = this.getMouseListenerOnHuman();
-                        fieldChild.addMouseListener(ml);
-
-                        Relative _child = new Relative();
-                        _child.setRelative(fam.getChild(k));
-
-                        fieldChild.setText(_child.getFullName());
-                        familyPanel.add(fieldChild);
-
-                        fieldBDate.setText(Relative.displayDate(_child.getBDate()));
-                        fieldBDate.setLocation(x + 300, y);
-                        familyPanel.add(fieldBDate);
-
-                        AvatarLabel avatar = new AvatarLabel();
-                        avatar.setSize(avatarSize);
-                        avatar.setLocation(x + 430, y);
-                        if (avatar.setAvatar(_child.getPathToAvatar()))
-                        {
-                            familyPanel.add(avatar);
-                        }
+                        y = titleChildren.getY() + titleChildren.getHeight() + k*31;                      
+                        _panel.setLocation(x, y);
+                        familyPanel.add(_panel);
+                        
                         childrenFromFamilies.add(fam.getChild(k));
                     }
                 }
@@ -1091,23 +1349,27 @@ public class MainForm extends JFrame
                 this.panelFamilies.add(familyPanel); 
             }                 
         }
+        
+        // Children without a parent
         ArrayList<String> children = this.human.getChildrenWhithoutFamily();
         if (!children.isEmpty())
         {
             JPanel childrenPanel = new JPanel(null);
             Border border = BorderFactory.createTitledBorder(getBundle("genealogia/Bundle").getString("children"));
             childrenPanel.setBorder(border);
-            childrenPanel.setSize(PANEL_WIDTH, 20 + children.size()*35);
-            int x = 10;
-            int y = lastY + lastHeight + 10;
-            childrenPanel.setLocation(x, y);
-            y += 10;
-            int height = 15;    //  высота записи о ребёнке
-            for (String child : children) {                
-                setHumanRow(childrenPanel, new Point(x, y), child);
-                y = y + height + 17;
+            childrenPanel.setSize(PANEL_WIDTH, 25 + children.size()*35);
+            int record_x = 10;
+            int record_y = lastY + lastHeight + 10;
+            childrenPanel.setLocation(record_x, record_y);
+            record_y += 10;
+            int height = 30;    //  высота записи о ребёнке
+            for (String child : children) {
+                Relative human = new Relative(child);
+                JPanel _panel = getHumanRow(human);
+                _panel.setLocation(record_x, record_y);
+                childrenPanel.add(_panel);
+                record_y += height + 5;
             }
-            
             this.panelFamilies.add(childrenPanel);
         }
         this.panelFamilies.repaint();    
@@ -1119,36 +1381,46 @@ public class MainForm extends JFrame
  * @param _point
  * @param humanID 
  */    
-    private void setHumanRow(JPanel _panel, Point _point, String humanID)
+    private JPanel getHumanRow(Relative human)
     {
-        int height = 15;
-        Relative human = new Relative(humanID);
+        int PANEL_HEIGHT = 30;
+        JPanel _panel = new JPanel(null);
+        _panel.setSize(450, PANEL_HEIGHT);
+        
         //ФИО человека
         JLabel fieldHuman = new JLabel();
-        fieldHuman.setSize(300, height);
+        fieldHuman.setSize(250, PANEL_HEIGHT);
         fieldHuman.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); 
-        fieldHuman.setLocation(_point);
+        fieldHuman.setLocation(0, 0);
         fieldHuman.setText(human.getFullName());
         fieldHuman.setName(human.getID()); 
         fieldHuman.setFont(plainFont);
+        fieldHuman.setVerticalAlignment(SwingConstants.BOTTOM);
+        fieldHuman.setHorizontalAlignment(SwingConstants.LEFT);
+        fieldHuman.setToolTipText(human.getDescription());
         MouseListener ml = this.getMouseListenerOnHuman();
         fieldHuman.addMouseListener(ml);        
         _panel.add(fieldHuman);
+        
         //Дата рождения
         JLabel fieldBDate = new JLabel();                        
-        fieldBDate.setSize(120, height);
+        fieldBDate.setSize(120, PANEL_HEIGHT);
         fieldBDate.setFont(plainFont);        
-        fieldBDate.setLocation(_point.x + fieldHuman.getWidth(), _point.y);
-        fieldBDate.setText(Relative.displayDate(human.getBDate())); 
+        fieldBDate.setLocation(fieldHuman.getWidth() + 5, 0);
+        fieldBDate.setText(Relative.displayDate(human.getBDate()));
+        fieldBDate.setVerticalAlignment(SwingConstants.BOTTOM);
         _panel.add(fieldBDate);
+        
         //Аватар
         AvatarLabel avatar = new AvatarLabel();
         avatar.setSize(avatarSize);
-        avatar.setLocation(_point.x + 430, _point.y);
+        avatar.setLocation(fieldBDate.getX() + fieldBDate.getWidth(), 0);
+        avatar.setVerticalAlignment(SwingConstants.TOP);
         if (avatar.setAvatar(human.getPathToAvatar()))
         {
             _panel.add(avatar);
-        }        
+        }   
+        return _panel;
     }
     
 /**
@@ -1203,7 +1475,6 @@ public class MainForm extends JFrame
         panelScrolable.repaint();
         panelScrolable.revalidate();
         
-        
         this.panelSearch.add(panelScrolable);
         this.panelSearch.repaint();        
     }
@@ -1213,8 +1484,7 @@ public class MainForm extends JFrame
  */    
     private void getSearchResult(String keywords)
     {
-        final int LABEL_WIDTH = 300;
-        final int LABEL_HEIGHT = 20;
+        final int RAW_HEIGHT = 30;
         
         clearSearchTab();
         Data result = new Data();
@@ -1227,80 +1497,22 @@ public class MainForm extends JFrame
             Node root = nodelist.item(0); // получаем рутовый нод
             Node results = root.getChildNodes().item(0);   //получаем
 
-            panelResults.setPreferredSize(new Dimension(600, results.getChildNodes().getLength()*30));
+            panelResults.setPreferredSize(new Dimension(600, results.getChildNodes().getLength()*30 + 10));
 
             for (int i = 0; i < results.getChildNodes().getLength(); i++)
             {
+                JLabel number = new JLabel(String.valueOf(i+1) + ".");
+                number.setLocation(5, i*RAW_HEIGHT + 5);
+                number.setSize(25, 30);
+                number.setVerticalAlignment(SwingConstants.BOTTOM);
+                
                 String id = results.getChildNodes().item(i).getTextContent();
-                Relative tempHuman = new Relative();
-                tempHuman.setRelative(id);
-
-                JLabel name = new JLabel();
-                name.setText(tempHuman.getFullName());
-                name.setSize(new Dimension(LABEL_WIDTH, LABEL_HEIGHT));
-                name.setLocation(new Point(10, i*LABEL_HEIGHT + 10));
-                name.setName(id);
-                name.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                name.setToolTipText(tempHuman.getDescription());
-                name.setFont(plainFont);
-
-                MouseListener ml = new MouseInputListener() 
-                {
-
-                    @Override
-                    public void mouseClicked(MouseEvent e) 
-                    {
-                        //Получаем кол-во щелчков
-                        int click = e.getClickCount();
-
-                        if (click == 2)
-                        {
-                            onClick(e.getComponent());
-                        }
-                    }
-
-                    @Override
-                    public void mousePressed(MouseEvent e) {
-
-                    }
-
-                    @Override
-                    public void mouseReleased(MouseEvent e) {
-
-                    }
-
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        setMouseOn(e);
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        setMouseOff(e);
-                    }
-
-                    @Override
-                    public void mouseDragged(MouseEvent e) {
-
-                    }
-
-                    @Override
-                    public void mouseMoved(MouseEvent e) {
-
-                    }
-                } ;
-
-                name.addMouseListener(ml);
-
-                JLabel dateBirth = new JLabel();
-                dateBirth.setText(tempHuman.getFullName());
-                dateBirth.setSize(new Dimension(100, 20));
-                dateBirth.setLocation(new Point(name.getX() + name.getWidth() + 5, i*25+10));                       
-                dateBirth.setText(Relative.displayDate(tempHuman.getBDate()));
-                dateBirth.setFont(plainFont);
-
-                panelResults.add(name);
-                panelResults.add(dateBirth);
+                Relative tempHuman = new Relative(id);
+                JPanel panel = getHumanRow(tempHuman);
+                panel.setLocation(new Point(30, i*RAW_HEIGHT + 5));
+                //panel.setBorder(BorderFactory.createEtchedBorder());
+                panelResults.add(number);
+                panelResults.add(panel);
             } 
             if (results.getChildNodes().getLength() == 0)
             {
@@ -1366,10 +1578,15 @@ public class MainForm extends JFrame
         form.setVisible(true);
     }
     
+//    public void init()
+//    {
+//        repaint();
+//    }    
+    
 /**
  * Added function onClose()
  */    
-    public void init()
+    public void initForm()
     {
         this.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -1378,6 +1595,7 @@ public class MainForm extends JFrame
         });
         this.history = new History();
         this.setHistoryMenu();
+
     }
     
 /**
